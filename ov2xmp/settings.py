@@ -113,7 +113,7 @@ AUTHENTICATION_BACKENDS = [
 
 # === OAuth2 Settings === (https://gitlab.com/systra/qeto/lib/django-oauth2-authcodeflow)
 # OIDC should be manually enabled in .env
-if os.environ['OV2XMP_AUTH_OIDC_ENABLE']:
+if int(os.environ['OV2XMP_AUTH_OIDC_ENABLE']):
     AUTHENTICATION_BACKENDS.append('oauth2_authcodeflow.auth.AuthenticationBackend')
     OIDC_OP_DISCOVERY_DOCUMENT_URL = os.environ['OV2XMP_AUTH_OIDC_OP_DISCOVERY_DOCUMENT_URL']
     OIDC_RP_CLIENT_ID = os.environ['OV2XMP_AUTH_OIDC_RP_CLIENT_ID']
@@ -124,7 +124,7 @@ if os.environ['OV2XMP_AUTH_OIDC_ENABLE']:
 # === LDAP Settings ===
 # LDAP should be manually enabled in .env
 # TODO: Cross-check the settings with similar projects. Why we use a CustomLDAPBackend?
-if os.environ['OV2XMP_AUTH_LDAP_ENABLE']:
+if int(os.environ['OV2XMP_AUTH_LDAP_ENABLE']):
     import ldap
 
     # The custom LDAP backend is used, instead of the default

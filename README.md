@@ -1,92 +1,287 @@
 # ov2xmp-django
 
+This is the main module of the O-V2X-MP that implements all the OCPP functionalities of the platform. In summary, the `ov2xmp-django` service is comprised of the following processes:
 
+- The CSMS service, which runs the OCPP server using the `sanic` web framework.
+- The `daphne` web server, which serves the Django system (`manage.py`).
+- The `celery` worker, which receives and executes tasks asynchronously.
 
-## Getting started
+## Deployment Guide
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+The `ov2xmp-django` is dockerised, so it can be deployed either as a single docker container or directly from source code as separate python instances on a Linux machine.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Deploy O-V2X-MP from source code
 
-## Add your files
+1. Clone the project (skip this step if you have already cloned `ov2xmp-django` as git submodule of `ov2xmp` )
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+    ```shell
+    git clone https://gitlab.trsc-ppc.gr/ev4eu/ov2xmp/ov2xmp-django/
+    ```
 
+2. Inside the `ov2xmp-django` folder, create a Python virtual environment
+
+    ```sh
+    cd ov2xmp-django
+    python3 -m venv venv
+    ```
+
+3. Install the build dependencies for the `python-ldap` library. Then, activate the environment and install the python requirements.
+
+    ```sh
+    apt install gcc libldap2-dev libsasl2-dev ldap-utils python3-dev
+    source ./venv/bin/activate
+    (venv) pip install -r requirements.txt
+    ```
+
+4. Load the environment variables that configure `ov2xmp-django`.
+
+    ```sh
+    (venv) export $(xargs <.env-local)
+    ```
+
+5. Make Migrations and Migrate
+
+    ```sh
+    (venv) python manage.py makemigrations
+    (venv) python manage.py migrate
+    ```
+
+6. Create a superuser, if it does not already exist.
+
+    ```sh
+    (venv) python manage.py createsuperuser
+    ```
+
+7. Open a new tmux session
+
+    ```sh
+    (venv) tmux
+    ```
+
+8. Inside the tmux session, activate the environment, load the environment variables, and run the Django ASGI (daphne) dev server
+
+    ```sh
+    source ./venv/bin/activate
+    (venv) export $(xargs <.env-local)
+    (venv) python manage.py runserver 0.0.0.0:8000
+    ```
+
+    Detach from the tmux session, by pressing `CTRL + B` and `D`.
+
+9. Open a new tmux session by issuing the `tmux` command. Inside the new tmux session, activate the environment, load the environment variables, and start the Sanic webserver
+
+    ```sh
+    source ./venv/bin/activate
+    (venv) export $(xargs <.env-local)
+    (venv) sanic csms:app --host=0.0.0.0 --port=9000 --reload
+    ```
+
+    Alternatively, if you need to record the CSMS logs to a file, issue the following instead:
+
+    ```sh
+    (venv) sanic csms:app --host=0.0.0.0 --port=9000 --reload 2>&1 | tee ./logs/central_system_output-3.log
+    ```
+
+    Detach from the tmux session, by pressing `CTRL + B` and `D`.
+
+10. Open a new tmux session by issuing the `tmux` command, and start the Celery worker:
+
+    ```sh
+    source ./venv/bin/activate
+    (venv) export $(xargs <.env-local)
+    (venv) celery -A ov2xmp worker -l info
+    ```
+
+    Detach from the tmux session, by pressing `CTRL + B` and `D`.
+
+### Build the docker image of `ov2xmp-django` locally
+
+```sh
+cd ov2xmp-django
+docker build -t ov2xmp-django:latest .
 ```
-cd existing_repo
-git remote add origin https://gitlab.trsc-ppc.gr/ev4eu/ov2xmp/ov2xmp-django.git
-git branch -M main
-git push -uf origin main
+
+## O-V2X-MP REST API
+
+To access the Swagger page of the O-V2X-MP REST API, visit the following page:
+
+`http://ov2xmp.trsc.net:8000/api`
+
+## O-V2X-MP Django Admin page
+
+The django admin page allows you to view and modify all the django objects of O-V2X-MP (e.g., chargepoints, idTags, charging profiles, tasks, etc). To access that page, visit the following link:
+
+`http://ov2xmp.trsc.net:8000/admin`
+
+## Overview of task management pipeline for OCPP requests
+
+In summary, in order for someone to initiate a synchronous request to the O-V2X-MP for an underlying EVCS (i.e., if `sync` is set to `true`):
+
+```plantuml
+@startuml
+actor user as "User app"
+participant ov2xmp as "OV2XMP \nREST API"
+entity celery as "Celery Task"
+participant csms as "CSMS \nREST API"
+entity cp as "ChargePoint\n (mobilityhouse)"
+
+user -> ov2xmp : REST API request
+activate user
+ov2xmp -> celery : Call task \nfunction
+celery -> csms : REST API call
+csms -> cp : Call method
+cp -> csms : Call resonse
+csms -> celery : REST API \nresponse
+celery -> ov2xmp : Call response
+ov2xmp -> user : REST API \nresponse
+deactivate user
+@enduml
 ```
 
-## Integrate with your tools
+In case of an asynchronous request (i.e., if `sync` is set to the default value (`false`):
 
-- [ ] [Set up project integrations](https://gitlab.trsc-ppc.gr/ev4eu/ov2xmp/ov2xmp-django/-/settings/integrations)
+```plantuml
+@startuml
+actor user as "User app"
+participant ov2xmp as "OV2XMP \nREST API"
+entity celery as "Celery Task"
+participant csms as "CSMS \nREST API"
+entity cp as "ChargePoint\n (mobilityhouse)"
 
-## Collaborate with your team
+user -> ov2xmp : REST API call
+activate user
+ov2xmp -> celery : submit task
+celery -> ov2xmp : task ID
+activate celery
+ov2xmp -> user : task ID
+deactivate user
+celery -> csms : REST API call
+csms -> cp : Call method
+cp -> csms : Call resonse
+csms -> celery : REST API \nresponse
+celery -> celery : Update task \nstatus
+user -> ov2xmp : Request task status
+activate user
+ov2xmp -> celery : Request task status
+celery -> ov2xmp : Task status
+ov2xmp -> user : Task status
+deactivate user
+@enduml
+```
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## How to develop REST API endpoints for OCPP commands
 
-## Test and Deploy
+To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that is initiated by the CSMS (e.g., a Reset command), follow the steps bellow:
 
-Use the built-in continuous integration in GitLab.
+1. First, we have to extend the ChargePoint class of the `ocpp` library, in order to define the entire logic of the new OCPP command. So, in `ov2xmp-django/chargepoint/ChargePoint16.py` or `ov2xmp/chargepoint/ChargePoint201.py`, under the "ACTIONS INITIATED BY THE CSMS" comment header, create a function for the overloaded ChargePoint class, like this:
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+    ```python
+    # Reset
+    async def reset(self, reset_type):
+        request = call.ResetPayload(type = reset_type)
+        response = await self.call(request)
+        if response is not None:
+            return {"status": response.status}
+        else:
+            return {"status": None}
+    ```
 
-***
+    Some notes:
 
-# Editing this README
+    - Start with a comment that refers to the OCPP command name
+    - The function must be `async`.
+    - The function parameters can be determined by checking the corresponding class inside `ocpp.v16.call`. For the Reset command, the parameters are derived from the `ResetPayload` class. This class has the `type` attribute, therefore we define the corresponding argument.
+    - Inside the function, we define the entire logic of the OCPP command and make all the Django ORM calls. Note that in the end we must return a specific dictionary: `{"status": XXX}`, where `XXX` is whatever output the OCPP call returns.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+2. Next, we have to add a REST API endpoint to the Sanic server of the CSMS (this is utilised by Django to initiate actions towards the OCPP server and the ChargePoint objects). In particular, under the CSMS REST API comment section of the `ov2xmp-django/csms.py` file, create a new function, like this:
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+    ```python
+    # Reset (hard or soft)
+    @app.route("/ocpp16/reset/<chargepoint_id:str>", methods=["POST"])
+    async def reset(request: Request, chargepoint_id: str):
+        if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
+            resetType = request.json["reset_type"]
+            result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].reset(resetType)
+            return json(result)
+        else:
+            return json({"status": "Charge Point does not exist"})
+    ```
 
-## Name
-Choose a self-explaining name for your project.
+    Some notes:
+    - Start with a comment that refers to the OCPP command name
+    - The `@app.route()` decorator defines the URL of the new OCPP command. It must follow the following format: `/ocpp16/XXX/<chargepoint_id>` (replace `ocpp16` with `ocpp201` if writing an endpoint for 2.0.1), where `XXX` is the name of the OCPP command. Always the method is POST and all parameters are provided in the JSON payload, except the `chargepoint_id`, which is always defined in the URL.
+    - At the beginning, the check `if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None` is always performed. If successful, the parameters are extracted from `request.json` and the corresponding function that we implemented in step 1 is awaited.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+3. Next, create a celery task that calls the REST API endpoint previously defined. To do that, define a function inside `api/tasks.py` like this:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+    ```python
+    @shared_task()
+    def ocpp16_reset_task(chargepoint_id, reset_type):
+        message = requests.post("http://localhost:9000/ocpp16/reset/" + chargepoint_id, json={"reset_type": reset_type}).json()
+        send_task_update(message)
+        return message
+    ```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+    Some notes:
+    - Each function starts with the `@shared_task()` decorator.
+    - Note the function name. It always starts with `ocpp16_` or `ocpp201_`, then the OCPP command name follows, and it ends with `_task`.
+    - All command parameters are provided in the function arguments (e.g., `reset_type`)
+    - Command parameters are transfered to the CSMS service via the `json` argument of the `requests.post()` function.
+    - At the end, the command respond is provided to the `send_task_update()`, which broadcasts the results via Django Channels.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+    > Please note that after changing `tasks.py`, you need to restart the celery worker in order for the changes to take effect.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+4. Next, we can start by defining the external REST API endpoint exposed by the Django system (OpenAPI). To do this, start by defining the serializer in `api/serializers.py`. In this file, create a serializer for the endpoint, like the following:
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+    ```python
+    class Ocpp16ResetSerializer(OcppCommandSerializer):
+        reset_type = serializers.ChoiceField(choices=tuple(member.value for member in ocppv16_enums.ResetType))
+    ```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+    Some notes:
+    - Note the class name. It starts with `Ocpp16` (or `Ocpp201`), then the OCPP commmand name follows, and it ends with `Serializer`.
+    - It inherits the `OcppCommandSerializer`, which defines the parameters that are accepted by all OCPP commands. In particular, all OCPP commands must accept the `chargepoint_id` and the `sync` parameter.
+    - The new serializer needs to define only the extra parameters that are associated with the corresponding OCPP command.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+5. Next, define the API View inside `api/views.py` like the following:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+    ```python
+    class Ocpp16ResetApiView(GenericAPIView):
+        permission_classes = [permissions.IsAuthenticated]
+        serializer_class = Ocpp16ResetSerializer
+        schema = AutoSchema()
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+        def post(self, request, *args, **kwargs):
+            '''
+            Send a Reset command (hard or soft)
+            '''
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+            serializer = Ocpp16ResetSerializer(data=request.data)
+            if serializer.is_valid():
+                if serializer.data["sync"]:
+                    task = ocpp16_reset_task(serializer.data["chargepoint_id"], serializer.data["reset_type"])
+                    task["success"] = True
+                    return Response(task, status=status.HTTP_200_OK)
+                else:
+                    task = ocpp16_reset_task.delay(serializer.data["chargepoint_id"], serializer.data["reset_type"]) # type: ignore
+                    return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    ```
 
-## License
-For open source projects, say how it is licensed.
+    Some notes:
+    - Keep the above structure/logic.
+    - Replace the serializer in `serializer_class`.
+    - It's important to provide a command description in the comment under the `post()` function (this comment is parsed in order to automatically generate the OpenAPI spec).
+    - In `serializer = Ocpp16ResetSerializer(data=request.data)` replace the serializer with yours.
+    - Inside the `if serializer.data["sync"]:` statement, replace the task function and its corresponding parameters.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+6. Include the new endpoint in `api/urls.py`, like so:
+
+    ```python
+    path('ocpp16/reset/', Ocpp16ResetApiView.as_view()),
+    ```
+
+    Some notes:
+    - In `ocpp16/reset/`, replace `reset` with the command name
+    - Replace `Ocpp16ResetApiView` with the name of the API view class defined previously.

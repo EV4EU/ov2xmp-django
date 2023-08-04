@@ -9,62 +9,62 @@ class OcppCommandSerializer(serializers.Serializer):
         fields = "__all__"
 
 
-class OcppResetSerializer(OcppCommandSerializer):
+class Ocpp16ResetSerializer(OcppCommandSerializer):
     reset_type = serializers.ChoiceField(choices=tuple(member.value for member in ocppv16_enums.ResetType))
 
 
-class OcppRemoteStartTransactionSerializer(OcppCommandSerializer):
+class Ocpp16RemoteStartTransactionSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField(default=None)
     id_tag = serializers.CharField(max_length=255)
 
 
-class OcppRemoteStopTransactionSerializer(OcppCommandSerializer):
+class Ocpp16RemoteStopTransactionSerializer(OcppCommandSerializer):
     transaction_id = serializers.IntegerField()
 
 
-class OcppReserveNowSerializer(OcppCommandSerializer):
+class Ocpp16ReserveNowSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField(required=False, default=None)
     id_tag = serializers.CharField(max_length=255)
     expiry_date = serializers.DateTimeField()
     reservation_id = serializers.IntegerField(required=False, default=None)
 
 
-class OcppCancelReservationSerializer(OcppCommandSerializer):
+class Ocpp16CancelReservationSerializer(OcppCommandSerializer):
     reservation_id = serializers.IntegerField()
 
 
-class OcppChangeAvailabilitySerializer(OcppCommandSerializer):
+class Ocpp16ChangeAvailabilitySerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField()
     availability_type = serializers.ChoiceField(choices=tuple(member.value for member in ocppv16_enums.AvailabilityType))
 
 
-class OcppChangeConfigurationSerializer(OcppCommandSerializer):
+class Ocpp16ChangeConfigurationSerializer(OcppCommandSerializer):
     key = serializers.CharField(max_length=50)
     value = serializers.CharField(max_length=500)
 
-#class OcppClearCache(OcppCommandSerializer):
+#class Ocpp16ClearCache(OcppCommandSerializer):
 
-class OcppUnlockConnectorSerializer(OcppCommandSerializer):
+class Ocpp16UnlockConnectorSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField()
 
 
-class OcppGetConfigurationSerializer(OcppCommandSerializer):
+class Ocpp16GetConfigurationSerializer(OcppCommandSerializer):
     keys = serializers.ListField(child=serializers.CharField(max_length=50), required=False, default=None)
 
 
-class OcppGetCompositeScheduleSerializer(OcppCommandSerializer):
+class Ocpp16GetCompositeScheduleSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField()
     duration = serializers.IntegerField()
     charging_rate_unit_type = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.ChargingRateUnitType))
 
 
-class OcppClearChargingProfileSerializer(OcppCommandSerializer):
+class Ocpp16ClearChargingProfileSerializer(OcppCommandSerializer):
     charging_profile_id = serializers.IntegerField(required=False)
     connector_id = serializers.IntegerField(required=False)
     charging_profile_purpose_type = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.ChargingProfilePurposeType))
     stack_level = serializers.IntegerField(required=False)    
 
 
-class OcppSetChargingProfileSerializer(OcppCommandSerializer):
+class Ocpp16SetChargingProfileSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField()
     charging_profile_id = serializers.IntegerField()

@@ -2,16 +2,14 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import permissions
-#from rest_framework.schemas.openapi import AutoSchema
-import requests
 from .serializers import *
 from .tasks import *
 from drf_spectacular.openapi import AutoSchema
 
 
-class OcppResetApiView(GenericAPIView):
+class Ocpp16ResetApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppResetSerializer
+    serializer_class = Ocpp16ResetSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -19,7 +17,7 @@ class OcppResetApiView(GenericAPIView):
         Send a Reset command (hard or soft)
         '''
 
-        serializer = OcppResetSerializer(data=request.data)
+        serializer = Ocpp16ResetSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_reset_task(serializer.data["chargepoint_id"], serializer.data["reset_type"])
@@ -31,9 +29,9 @@ class OcppResetApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppRemoteStartTrasactionApiView(GenericAPIView):
+class Ocpp16RemoteStartTrasactionApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppRemoteStartTransactionSerializer
+    serializer_class = Ocpp16RemoteStartTransactionSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -41,7 +39,7 @@ class OcppRemoteStartTrasactionApiView(GenericAPIView):
         Send a Remote Start Transaction command
         '''
 
-        serializer = OcppRemoteStartTransactionSerializer(data=request.data)
+        serializer = Ocpp16RemoteStartTransactionSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_remote_start_transaction(serializer.data["chargepoint_id"], request.data["connector_id"], request.data["id_tag"], request.data.get("charging_profile", None))
@@ -53,9 +51,9 @@ class OcppRemoteStartTrasactionApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppRemoteStopTrasactionApiView(GenericAPIView):
+class Ocpp16RemoteStopTrasactionApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppRemoteStopTransactionSerializer
+    serializer_class = Ocpp16RemoteStopTransactionSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -63,7 +61,7 @@ class OcppRemoteStopTrasactionApiView(GenericAPIView):
         Send a Remote Stop Transaction command
         '''
 
-        serializer = OcppRemoteStopTransactionSerializer(data=request.data)
+        serializer = Ocpp16RemoteStopTransactionSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_remote_stop_transaction(serializer.data["chargepoint_id"], serializer.data["transaction_id"])
@@ -75,9 +73,9 @@ class OcppRemoteStopTrasactionApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppReserveNowApiView(GenericAPIView):
+class Ocpp16ReserveNowApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppReserveNowSerializer
+    serializer_class = Ocpp16ReserveNowSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -85,7 +83,7 @@ class OcppReserveNowApiView(GenericAPIView):
         Send a Reserve Now command
         '''
 
-        serializer = OcppReserveNowSerializer(data=request.data)
+        serializer = Ocpp16ReserveNowSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_reserve_now(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["id_tag"], serializer.data["expiry_date"], serializer.data["reservation_id"]) 
@@ -97,9 +95,9 @@ class OcppReserveNowApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppCancelReservationApiView(GenericAPIView):
+class Ocpp16CancelReservationApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppCancelReservationSerializer
+    serializer_class = Ocpp16CancelReservationSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -107,7 +105,7 @@ class OcppCancelReservationApiView(GenericAPIView):
         Send a Cancel Reservation command
         '''
 
-        serializer = OcppCancelReservationSerializer(data=request.data)
+        serializer = Ocpp16CancelReservationSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_cancel_reservation(serializer.data["chargepoint_id"], serializer.data["reservation_id"])
@@ -119,9 +117,9 @@ class OcppCancelReservationApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppChangeAvailabilityApiView(GenericAPIView):
+class Ocpp16ChangeAvailabilityApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppChangeAvailabilitySerializer
+    serializer_class = Ocpp16ChangeAvailabilitySerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -129,7 +127,7 @@ class OcppChangeAvailabilityApiView(GenericAPIView):
         Send a Change Availability command
         '''
 
-        serializer = OcppChangeAvailabilitySerializer(data=request.data)
+        serializer = Ocpp16ChangeAvailabilitySerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_change_availability(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["availability_type"])
@@ -141,9 +139,9 @@ class OcppChangeAvailabilityApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppChangeConfigurationApiView(GenericAPIView):
+class Ocpp16ChangeConfigurationApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppChangeConfigurationSerializer
+    serializer_class = Ocpp16ChangeConfigurationSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -151,7 +149,7 @@ class OcppChangeConfigurationApiView(GenericAPIView):
         Send a Change Configuration command
         '''
 
-        serializer = OcppChangeConfigurationSerializer(data=request.data)
+        serializer = Ocpp16ChangeConfigurationSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_change_configuration(serializer.data["chargepoint_id"], serializer.data["key"], serializer.data["value"])
@@ -163,9 +161,9 @@ class OcppChangeConfigurationApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppClearCacheApiView(GenericAPIView):
+class Ocpp16ClearCacheApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppCommandSerializer
+    serializer_class = Ocpp16CommandSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -173,7 +171,7 @@ class OcppClearCacheApiView(GenericAPIView):
         Send a Change Cache command
         '''
 
-        serializer = OcppCommandSerializer(data=request.data)
+        serializer = Ocpp16CommandSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_clear_cache(serializer.data["chargepoint_id"])
@@ -185,9 +183,9 @@ class OcppClearCacheApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppUnlockConnectorApiView(GenericAPIView):
+class Ocpp16UnlockConnectorApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppUnlockConnectorSerializer
+    serializer_class = Ocpp16UnlockConnectorSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -195,7 +193,7 @@ class OcppUnlockConnectorApiView(GenericAPIView):
         Send an Unlock Connector command
         '''
 
-        serializer = OcppUnlockConnectorSerializer(data=request.data)
+        serializer = Ocpp16UnlockConnectorSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_unlock_connector(serializer.data["chargepoint_id"], serializer.data["connector_id"])
@@ -207,9 +205,9 @@ class OcppUnlockConnectorApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppGetConfigurationApiView(GenericAPIView):
+class Ocpp16GetConfigurationApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppGetConfigurationSerializer
+    serializer_class = Ocpp16GetConfigurationSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -217,7 +215,7 @@ class OcppGetConfigurationApiView(GenericAPIView):
         Send a Get Configuration command
         '''
 
-        serializer = OcppGetConfigurationSerializer(data=request.data)
+        serializer = Ocpp16GetConfigurationSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_get_configuration(serializer.data["chargepoint_id"], serializer.data["keys"])
@@ -229,9 +227,9 @@ class OcppGetConfigurationApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppGetCompositeScheduleApiView(GenericAPIView):
+class Ocpp16GetCompositeScheduleApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppGetCompositeScheduleSerializer
+    serializer_class = Ocpp16GetCompositeScheduleSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -239,7 +237,7 @@ class OcppGetCompositeScheduleApiView(GenericAPIView):
         Send a Get Composite Schedule command
         '''
 
-        serializer = OcppGetCompositeScheduleSerializer(data=request.data)
+        serializer = Ocpp16GetCompositeScheduleSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_get_composite_schedule_task(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["duration"], serializer.data["charging_rate_unit_type"])
@@ -251,9 +249,9 @@ class OcppGetCompositeScheduleApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OcppClearChargingProfileApiView(GenericAPIView):
+class Ocpp16ClearChargingProfileApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppClearChargingProfileSerializer
+    serializer_class = Ocpp16ClearChargingProfileSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -261,7 +259,7 @@ class OcppClearChargingProfileApiView(GenericAPIView):
         Send a Clear Charging Profile command
         '''
 
-        serializer = OcppClearChargingProfileSerializer(data=request.data)
+        serializer = Ocpp16ClearChargingProfileSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_clear_charging_profile_task(serializer.data["chargepoint_id"], serializer.data["charging_profile_id"], serializer.data["connector_id"], serializer.data["charging_profile_purpose_type"], serializer.data["stack_level"])
@@ -273,9 +271,9 @@ class OcppClearChargingProfileApiView(GenericAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 
-class OcppSetChargingProfileApiView(GenericAPIView):
+class Ocpp16SetChargingProfileApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OcppSetChargingProfileSerializer
+    serializer_class = Ocpp16SetChargingProfileSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -283,7 +281,7 @@ class OcppSetChargingProfileApiView(GenericAPIView):
         Send a Set Charging Profile command
         '''
 
-        serializer = OcppSetChargingProfileSerializer(data=request.data)
+        serializer = Ocpp16SetChargingProfileSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_set_charging_profile_task(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["charging_profile_id"])

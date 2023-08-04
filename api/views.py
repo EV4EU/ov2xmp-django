@@ -163,7 +163,7 @@ class Ocpp16ChangeConfigurationApiView(GenericAPIView):
 
 class Ocpp16ClearCacheApiView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = Ocpp16CommandSerializer
+    serializer_class = OcppCommandSerializer
     schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
@@ -171,7 +171,7 @@ class Ocpp16ClearCacheApiView(GenericAPIView):
         Send a Change Cache command
         '''
 
-        serializer = Ocpp16CommandSerializer(data=request.data)
+        serializer = OcppCommandSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
                 task = ocpp16_clear_cache(serializer.data["chargepoint_id"])

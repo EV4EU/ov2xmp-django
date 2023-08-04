@@ -22,16 +22,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-mp_@r41!*d7p)+xnm7@pav1#(+ft#=1t6s!8hu3(&rhywr)d!x'
+SECRET_KEY = os.environ["OV2XMP_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = int(os.environ["OV2XMP_DEBUG"])
 
-ALLOWED_HOSTS = ['*']
-
+ALLOWED_HOSTS = os.environ["OV2XMP_DJANGO_ALLOWED_HOSTS"].split(",")
 
 # Application definition
-
 INSTALLED_APPS = [
     'daphne',
     'celery',
@@ -110,37 +108,36 @@ ASGI_APPLICATION = 'ov2xmp.asgi.application'
 ###########################################################################
 
 AUTHENTICATION_BACKENDS = [
-    'oauth2_authcodeflow.auth.AuthenticationBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
 # === OAuth2 Settings === (https://gitlab.com/systra/qeto/lib/django-oauth2-authcodeflow)
 # OIDC should be manually enabled in .env
-if os.environ.get('OIDC_ENABLE', 0):
-    OIDC_OP_DISCOVERY_DOCUMENT_URL = os.environ.get('OIDC_OP_DISCOVERY_DOCUMENT_URL', None)
-    OIDC_RP_CLIENT_ID = os.environ.get('OIDC_RP_CLIENT_ID', None)
-    OIDC_RP_CLIENT_SECRET = os.environ.get('OIDC_RP_CLIENT_SECRET', None)
-    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', True)
+if os.environ['OV2XMP_AUTH_OIDC_ENABLE']:
+    AUTHENTICATION_BACKENDS.append('oauth2_authcodeflow.auth.AuthenticationBackend')
+    OIDC_OP_DISCOVERY_DOCUMENT_URL = os.environ['OV2XMP_AUTH_OIDC_OP_DISCOVERY_DOCUMENT_URL']
+    OIDC_RP_CLIENT_ID = os.environ['OV2XMP_AUTH_OIDC_RP_CLIENT_ID']
+    OIDC_RP_CLIENT_SECRET = os.environ['OV2XMP_AUTH_OIDC_RP_CLIENT_SECRET']
+    SESSION_COOKIE_SECURE = True
     OIDC_CREATE_USER = True
 
 # === LDAP Settings ===
 # LDAP should be manually enabled in .env
-AUTH_LDAP_ENABLE = bool(int(os.environ.get('AUTH_LDAP_ENABLE', 0)))
-
-if AUTH_LDAP_ENABLE:
+# TODO: Cross-check the settings with similar projects. Why we use a CustomLDAPBackend?
+if os.environ['OV2XMP_AUTH_LDAP_ENABLE']:
     import ldap
 
     # The custom LDAP backend is used, instead of the default
     AUTHENTICATION_BACKENDS.append('ov2xmp.ldap.CustomLDAPBackend')
 
      # The following format is expected: ldap://ldap.example.com
-    AUTH_LDAP_SERVER_URI = os.environ.get('AUTH_LDAP_SERVER_URI', None)
+    AUTH_LDAP_SERVER_URI = os.environ['OV2XMP_AUTH_LDAP_SERVER_URI']
 
     # Read-only user that is able to bind and search for other users. Some LDAP servers support anonymous login, however, we assume that a 
     # bind account must be provided.
-    AUTH_LDAP_BIND_DN = os.environ.get('AUTH_LDAP_BIND_DN', None)
-    AUTH_LDAP_BIND_PASSWORD = os.environ.get('AUTH_LDAP_BIND_PASSWORD', None)
-    AUTH_LDAP_USER_DN_TEMPLATE = "CN=%(user)s," + os.environ.get('AUTH_LDAP_SEARCH_DN', 'None')
+    AUTH_LDAP_BIND_DN = os.environ['OV2XMP_AUTH_LDAP_BIND_DN']
+    AUTH_LDAP_BIND_PASSWORD = os.environ['OV2XMP_AUTH_LDAP_BIND_PASSWORD']
+    AUTH_LDAP_USER_DN_TEMPLATE = "CN=%(user)s," + os.environ['OV2XMP_AUTH_LDAP_SEARCH_DN']
 
     # Enforce TLS - We do not accept transmitting LDAP credentials without TLS!
     AUTH_LDAP_START_TLS = True
@@ -153,11 +150,11 @@ if AUTH_LDAP_ENABLE:
     # Maps basic user attributes with LDAP fields
     AUTH_LDAP_USER_ATTR_MAP = {
         # AUTH_LDAP_USER_ATTR_MAP_FIRSTNAME is usually `givenName`.
-        "first_name": os.environ.get('AUTH_LDAP_USER_ATTR_MAP_FIRSTNAME', None),  
+        "first_name": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_FIRSTNAME'],  
         # AUTH_LDAP_USER_ATTR_MAP_LASTNAME is usually `sn`.
-        "last_name": os.environ.get('AUTH_LDAP_USER_ATTR_MAP_LASTNAME', None),
+        "last_name": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_LASTNAME'],
         # AUTH_LDAP_USER_ATTR_MAP_EMAIL is usually `mail`.
-        "email": os.environ.get('AUTH_LDAP_USER_ATTR_MAP_EMAIL', None)
+        "email": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_EMAIL']
     }
 
 ###########################################################################
@@ -188,11 +185,11 @@ AUTH_PASSWORD_VALIDATORS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ov2xmp',                      
-        'USER': 'ev4eu',
-        'PASSWORD': 'LPi8FX4eMb1dz02AFfp9H42rp',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ['OV2XMP_POSTGRES_DB'],                      
+        'USER': os.environ['OV2XMP_POSTGRES_USER'],
+        'PASSWORD': os.environ['OV2XMP_POSTGRES_PASSWORD'],
+        'HOST': os.environ['OV2XMP_POSTGRES_HOST'],
+        'PORT': os.environ['OV2XMP_POSTGRES_PORT'],
     }
 }
 
@@ -204,7 +201,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
         "CONFIG": {
             "hosts": [
-                (os.environ.get('REDIS_BROKER_HOST', 'localhost'), int(os.environ.get('REDIS_BROKER_PORT', '6379')))
+                (os.environ['OV2XMP_REDIS_BROKER_HOST'], int(os.environ['OV2XMP_REDIS_BROKER_PORT']))
             ],
         },
     },
@@ -223,11 +220,14 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
-
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"), 
-]
+
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+)
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
@@ -252,8 +252,7 @@ MESSAGE_TAGS = {
 
 
 # === Celery settings ===
-CELERY_BROKER_URL = "redis://" + os.environ.get('REDIS_BROKER_HOST', 'localhost') + ":" + os.environ.get('REDIS_BROKER_PORT', '6379') + "/"
-#CELERY_RESULT_BACKEND = "redis://" + os.environ.get('REDIS_BROKER_HOST', 'docker-lab.trsc.net') + ":" + os.environ.get('REDIS_BROKER_PORT', '6379') + "/"
+CELERY_BROKER_URL = "redis://" + os.environ['OV2XMP_REDIS_BROKER_HOST'] + ":" + os.environ['OV2XMP_REDIS_BROKER_PORT'] + "/"
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
 CELERY_ENABLE_UTC = True
@@ -263,15 +262,15 @@ CELERY_RESULT_EXTENDED = True
 
 
 # === SMTP settings ===
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', None)
-EMAIL_HOST = os.environ.get('EMAIL_SMTP_HOST', None)
-EMAIL_HOST_USER = os.environ.get('EMAIL_USER', None)
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD', None)
-EMAIL_PORT = os.environ.get('EMAIL_SMTP_PORT', None)
+#EMAIL_USE_TLS = os.environ['OV2XMP_REDIS_BROKER_HOST']
+#EMAIL_HOST = os.environ['OV2XMP_REDIS_BROKER_HOST']
+#EMAIL_HOST_USER = os.environ['OV2XMP_REDIS_BROKER_HOST']
+#EMAIL_HOST_PASSWORD = os.environ['OV2XMP_REDIS_BROKER_HOST']
+#EMAIL_PORT = os.environ['OV2XMP_REDIS_BROKER_HOST']
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# === REST Settings ===
+# === DRF Settings ===
 
 REST_FRAMEWORK = {
     # YOUR SETTINGS

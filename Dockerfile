@@ -9,21 +9,18 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # install dependencies
-COPY ../requirements.txt .
+COPY ./requirements.txt .
 
-RUN apk update --no-cache \
-    && apk add --virtual build-deps gcc python3-dev musl-dev build-base \
-    && apk add libpq postgresql-dev openssl-dev cargo jpeg-dev zlib-dev libffi-dev \
+RUN apt update \
+    && apt install -y gcc libldap2-dev libsasl2-dev ldap-utils python3-dev \
     && pip install --upgrade pip \
-    && pip install -r requirements.txt  \
-    && apk del build-deps
+    && pip install -r requirements.txt
 
 # Copy source code to /code/
 COPY . .
-#COPY ../nginx/tls/sdn_dashboard.crt /etc/nginx/tls/sdn_dashboard.crt
-#COPY ../nginx/tls/sdn_dashboard.key /etc/nginx/tls/sdn_dashboard.key
 
 EXPOSE 8000
+EXPOSE 9000
 
 RUN chmod +x entrypoint.sh
 

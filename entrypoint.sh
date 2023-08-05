@@ -22,8 +22,6 @@ fi
 
 python manage.py collectstatic --noinput
 
-(nohup sanic csms:app --host=0.0.0.0 --port=9000 --reload) &
-
 (nohup celery -A ov2xmp worker -l info) &
 
 daphne -b 0.0.0.0 -p 8000 ov2xmp.asgi:application

@@ -64,7 +64,6 @@ INSTALLED_APPS = [
     'tasks',
     'chargingprofile',
     'location',
-    'heartbeat',
     'statusnotification',
 
     'api'

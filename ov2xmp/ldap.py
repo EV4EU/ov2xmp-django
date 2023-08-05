@@ -26,7 +26,7 @@ class CustomLDAPBackend(LDAPBackend):
     However, this is not always correct, because the username is not always used as CN. For example, AD applies the full name as CN. </br>
 
     To overcome this, the custom authentication backend, first binds with the read-only user and searches for the LDAP user with the given username. 
-    The username mapping (e.g., `uid` or `sAMAccountName`) is provided by the `AUTH_LDAP_SEARCH_ATTRIBUTE` environmental variable by the O-V2X-MP admin.
+    The username mapping (e.g., `uid` or `sAMAccountName`) is provided by the `AUTH_LDAP_SEARCH_ATTRIBUTE` environmental variable during deployment.
     Then, the method replaces the incorrect DN of the `ldap_user` received in `authenticate_ldap_user()` with the DN retrieved from the user's 
     LDAP object. Finally, Django sends the correct LDAP request including the correct DN. </br>
     **param** - *ldap_user* : The LDAP user object initially received by `authenticate_ldap_user()`. The DN attribute of this object will be replaced in order to ensure correct authentication. </br>

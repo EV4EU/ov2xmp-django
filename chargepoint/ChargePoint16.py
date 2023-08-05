@@ -10,7 +10,6 @@ from transaction.models import TransactionStatus
 from connector.models import Connector as ConnectorModel
 from reservation.models import Reservation as ReservationModel
 from statusnotification.models import Statusnotification as StatusnotificationModel
-from heartbeat.models import Heartbeat as HeartbeatModel
 
 import uuid
 from django.utils import timezone
@@ -80,11 +79,6 @@ class ChargePoint16(cp):
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
         current_cp.last_heartbeat = timezone.now()
         current_cp.save()
-
-        HeartbeatModel.objects.create(
-            timestamp = current_cp.last_heartbeat,
-            chargepoint = current_cp
-        )
 
         return call_result.HeartbeatPayload(
             #current_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") + "Z"

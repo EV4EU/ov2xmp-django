@@ -10,7 +10,6 @@ from chargingprofile.views import ChargingprofileApiView, ChargingprofileDetailA
 from idtag.views import IdtagApiView, IdtagDetailApiView
 from tasks.views import TasksApiView, TasksDetailApiView
 from api.views import *
-from heartbeat.views import HeartbeatApiView, HeartbeatSearchApiView
 from location.views import LocationApiView, LocationDetailApiView
 from reservation.views import ReservationApiView, ReservationDetailApiView
 from statusnotification.views import StatusnotificationApiView, StatusnotificationSearchApiView
@@ -38,9 +37,6 @@ urlpatterns = [
 
     path('task/', TasksApiView.as_view()),
     path('task/<str:task_id>/', TasksDetailApiView.as_view()),
-
-    path('heartbeat/<str:heartbeat_id>/', HeartbeatApiView.as_view()),
-    path('heartbeat/search/<str:chargepoint_id>/', HeartbeatSearchApiView.as_view()),
 
     path('location/', LocationApiView.as_view()),
     path('location/<str:location_id>/', LocationDetailApiView.as_view()),

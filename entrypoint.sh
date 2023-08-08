@@ -22,6 +22,4 @@ fi
 
 python manage.py collectstatic --noinput
 
-(nohup celery -A ov2xmp worker -l info) &
-
 daphne -b 0.0.0.0 -p 8000 ov2xmp.asgi:application

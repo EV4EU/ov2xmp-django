@@ -3,7 +3,7 @@
 This is the main module of the O-V2X-MP that implements all the OCPP functionalities of the platform. In summary, the `ov2xmp-django` service is comprised of the following processes:
 
 - The CSMS service, which runs the OCPP server using the `sanic` web framework.
-- The `daphne` web server, which serves the Django system (`manage.py`).
+- The `daphne` web server, which serves the Django system.
 - The `celery` worker, which receives and executes tasks asynchronously.
 
 ## Deployment Guide

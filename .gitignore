@@ -7,6 +7,7 @@ db.sqlite3
 profile_pics
 logs
 *.pdf
+*.db
 
 # Backup files # 
 *.bak 

@@ -25,6 +25,33 @@ app.ctx.CHARGEPOINTS_V16 = {}
 app.ctx.CHARGEPOINTS_V201 = {}
 app.config.FALLBACK_ERROR_FORMAT = "json"
 
+from logstash_async.transport import TcpTransport
+from logstash_async.handler import AsynchronousLogstashHandler
+
+if int(os.environ["OV2XMP_LOGSTASH_ENABLE"]):
+    ocpp_logger = logging.getLogger("ocpp")
+    transport = TcpTransport(
+        host=os.environ["OV2XMP_LOGSTASH_HOST"],
+        port=int(os.environ["OV2XMP_LOGSTASH_PORT"]),
+        ssl_enable=False,
+        ssl_verify=False,
+        keyfile=None,
+        certfile=None,
+        ca_certs=None,
+        timeout=5.0,
+    )
+
+    handler = AsynchronousLogstashHandler(
+
+        host=os.environ["OV2XMP_LOGSTASH_HOST"],
+        port=int(os.environ["OV2XMP_LOGSTASH_PORT"]),
+        transport=transport,
+        database_path='logstash_test.db'
+    )
+
+    ocpp_logger.addHandler(handler)
+
+
 ###################################################################################################
 ################################## CSMS REST API ##################################################
 ###################################################################################################

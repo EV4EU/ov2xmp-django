@@ -1,31 +1,33 @@
 # ov2xmp-django
 
-This is the main module of the O-V2X-MP that implements all the OCPP functionalities of the platform. In summary, the `ov2xmp-django` service is comprised of the following processes:
+This is the main module of the O-V2X-MP that implements all the OCPP functionalities of the platform. In summary, the module consists of the following microservices:
 
-- The CSMS service, which runs the OCPP server using the `sanic` web framework.
-- The `daphne` web server, which serves the Django system.
-- The `celery` worker, which receives and executes tasks asynchronously.
+- The CSMS service (`ov2xmp-csms`), which runs the OCPP server using the `sanic` web framework.
+- The `daphne` web server (`ov2xmp-daphne`), which serves the Django system.
+- The `celery` worker (`ov2xmp-celery`), which receives and executes tasks asynchronously.
 
 ## Deployment Guide
 
-The `ov2xmp-django` is dockerised, so it can be deployed either as a single docker container or directly from source code as separate python instances on a Linux machine.
+All the above microservices utilise the same source code of Django. The services can run either directly from the source code, as separate python instances on a Linux machine, or as docker containers that use the same docker image (`ov2xmp-django`).
 
 ### Deploy O-V2X-MP from source code
 
-1. Clone the project (skip this step if you have already cloned `ov2xmp-django` as git submodule of `ov2xmp` )
+> Please note that steps 1-6 are executed only once, when deploying to a new VM. However, since migrations must be included in the source code, it is suggested to execute `python manage.py migrate` each time pulling new source code from the repo. Moreover, `python manage.py makemigrations` must be executed each time there is a change in the django models.
+
+1. Clone the project (skip this step if you have already cloned `ov2xmp-django` as git submodule of `ov2xmp`)
 
     ```shell
     git clone https://gitlab.trsc-ppc.gr/ev4eu/ov2xmp/ov2xmp-django/
     ```
 
-2. Inside the `ov2xmp-django` folder, create a Python virtual environment
+2. Inside the `ov2xmp-django` folder, create a Python virtual environment:
 
     ```sh
     cd ov2xmp-django
     python3 -m venv venv
     ```
 
-3. Install the build dependencies for the `python-ldap` library. Then, activate the environment and install the python requirements.
+3. Install the build dependencies for the `python-ldap` library. Then, activate the environment and install the python requirements:
 
     ```sh
     apt install gcc libldap2-dev libsasl2-dev ldap-utils python3-dev
@@ -33,32 +35,32 @@ The `ov2xmp-django` is dockerised, so it can be deployed either as a single dock
     (venv) pip install -r requirements.txt
     ```
 
-4. Load the environment variables that configure `ov2xmp-django`.
+4. Load the environment variables that configure `ov2xmp-django`:
 
     ```sh
     (venv) export $(xargs <.env-local)
     ```
 
-5. Make Migrations and Migrate
+5. Make Migrations and Migrate:
 
     ```sh
     (venv) python manage.py makemigrations
     (venv) python manage.py migrate
     ```
 
-6. Create a superuser, if it does not already exist.
+6. Create a superuser, if it does not already exist:
 
     ```sh
     (venv) python manage.py createsuperuser
     ```
 
-7. Open a new tmux session
+7. Open a new tmux session:
 
     ```sh
     (venv) tmux
     ```
 
-8. Inside the tmux session, activate the environment, load the environment variables, and run the Django ASGI (daphne) dev server
+8. Inside the tmux session, activate the environment, load the environment variables, and run the daphne server in development mode:
 
     ```sh
     source ./venv/bin/activate
@@ -68,7 +70,7 @@ The `ov2xmp-django` is dockerised, so it can be deployed either as a single dock
 
     Detach from the tmux session, by pressing `CTRL + B` and `D`.
 
-9. Open a new tmux session by issuing the `tmux` command. Inside the new tmux session, activate the environment, load the environment variables, and start the Sanic webserver
+9. Open a new tmux session by issuing the `tmux` command. Inside the new tmux session, activate the environment, load the environment variables, and start the Sanic webserver:
 
     ```sh
     source ./venv/bin/activate
@@ -94,7 +96,7 @@ The `ov2xmp-django` is dockerised, so it can be deployed either as a single dock
 
     Detach from the tmux session, by pressing `CTRL + B` and `D`.
 
-### Build the docker image of `ov2xmp-django` locally
+### Build the `ov2xmp-django` docker image locally
 
 ```sh
 cd ov2xmp-django

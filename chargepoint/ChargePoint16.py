@@ -211,6 +211,11 @@ class ChargePoint16(cp):
             return call_result.StopTransactionPayload()
 
 
+    @on(ocpp_v16_enums.Action.DiagnosticsStatusNotification)
+    def on_DiagnosticsStatusNotification(self):
+        return call_result.DiagnosticsStatusNotificationPayload()
+        
+
     ##########################################################################################################################
     #################### ACTIONS INITIATED BY THE CSMS #######################################################################
     ##########################################################################################################################
@@ -379,5 +384,19 @@ class ChargePoint16(cp):
         response = await self.call(request)
         if response is not None:
             return {"status": response.status}
+        else:
+            return {"status": None}
+
+    #GetDiagnostics
+    async def get_diagnostics(self, location, retries, retry_interval, start_time, stop_time):
+        request = call.GetDiagnosticsPayload(
+            location=location,
+            retries=retries,
+            retry_interval=retry_interval,
+            start_time=start_time,
+            stop_time=stop_time)
+        response = await self.call(request)
+        if response is not None:
+            return {"status": response.file_name}
         else:
             return {"status": None}

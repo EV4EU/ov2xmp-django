@@ -63,5 +63,6 @@ urlpatterns = [
     path('ocpp16/getconfiguration', Ocpp16GetConfigurationApiView.as_view()),
     path('ocpp16/getcompositeschedule', Ocpp16GetCompositeScheduleApiView.as_view()),
     path('ocpp16/clearchargingprofile', Ocpp16ClearChargingProfileApiView.as_view()),
-    path('ocpp16/setchargingprofile', Ocpp16SetChargingProfileApiView.as_view())
+    path('ocpp16/setchargingprofile', Ocpp16SetChargingProfileApiView.as_view()),
+    path('ocpp16/getdiagnostics', Ocpp16GetDiagnosticsApiView.as_view()),
 ]

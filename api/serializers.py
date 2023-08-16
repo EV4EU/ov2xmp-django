@@ -4,7 +4,7 @@ from ocpp.v16 import enums as ocppv16_enums
 
 class OcppCommandSerializer(serializers.Serializer):
     chargepoint_id = serializers.CharField(max_length=255)
-    sync = serializers.BooleanField(required=False, default=False)
+    sync = serializers.BooleanField(required=False, default=True)
     class Meta:
         fields = "__all__"
 
@@ -68,3 +68,11 @@ class Ocpp16ClearChargingProfileSerializer(OcppCommandSerializer):
 class Ocpp16SetChargingProfileSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField()
     charging_profile_id = serializers.IntegerField()
+
+
+class Ocpp16GetDiagnosticsSerializer(OcppCommandSerializer):
+    location = serializers.CharField(max_length=2000)
+    retries = serializers.IntegerField(required=False)
+    retry_interval = serializers.IntegerField(required=False)
+    start_time = serializers.DateTimeField(required=False)
+    stop_time = serializers.DateTimeField(required=False)

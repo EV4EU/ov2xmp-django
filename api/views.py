@@ -291,3 +291,25 @@ class Ocpp16SetChargingProfileApiView(GenericAPIView):
                 return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Ocpp16GetDiagnosticsApiView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = Ocpp16GetDiagnosticsSerializer
+    schema = AutoSchema()
+
+    def post(self, request, *args, **kwargs):
+        '''
+        Send a Get Diagnostics command
+        '''
+
+        serializer = Ocpp16GetDiagnosticsSerializer(data=request.data)
+        if serializer.is_valid():
+            if serializer.data["sync"]:
+                task = ocpp16_get_diagnostics_task(serializer.data["chargepoint_id"], serializer.data["location"], serializer.data.get("retries", None), serializer.data.get("retry_interval", None), serializer.data.get("start_time", None), serializer.data.get("stop_time", None))
+                return Response(task, status=status.HTTP_200_OK)
+            else:
+                task = ocpp16_get_diagnostics_task.delay(serializer.data["chargepoint_id"], serializer.data["location"], serializer.data["retries"], serializer.data["retry_interval"], serializer.data["start_time"], serializer.data["stop_time"]) # type: ignore
+                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

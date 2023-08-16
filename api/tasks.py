@@ -112,9 +112,14 @@ def ocpp16_set_charging_profile_task(chargepoint_id, connector_id, charging_prof
     return message
 
 
+@shared_task()
+def ocpp16_get_diagnostics_task(chargepoint_id, location, retries, retry_interval, start_time, stop_time):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp16/getdiagnostics/" + chargepoint_id, json={"location": location, "retries": retries, "retry_interval": retry_interval, "start_time": start_time, "stop_time": stop_time}).json()
+    send_task_update(message)
+    return message
+
 
 '''
-
 
 @shared_task()
 def dummy_task(param1, param2):

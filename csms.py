@@ -189,11 +189,11 @@ async def get_composite_schedule(request: Request, chargepoint_id: str):
 @app.route("/ocpp16/clearchargingprofile/<chargepoint_id:str>", methods=["POST"])
 async def clear_charging_profile(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
-        id_charging_profile=request.json["id"]
+        charging_profile_id=request.json["id"]
         connector_id = request.json["connector_id"]
         charging_profile_purpose_type= request.json["charging_profile_purpose"]
         stack_level= request.json["stack_level"]
-        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].clear_charging_profile(id_charging_profile, connector_id, charging_profile_purpose_type, stack_level)
+        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].clear_charging_profile(charging_profile_id, connector_id, charging_profile_purpose_type, stack_level)
         return json(result)
     else:
         return json({"status": "Charge Point does not exist"})
@@ -246,6 +246,20 @@ async def set_charging_profile(request: Request, chargepoint_id: str):
     else:
         return json({"status": "Charge Point does not exist"})
 
+
+# GetDiagnostics
+@app.route("/ocpp16/getdiagnostics/<chargepoint_id:str>", methods=["POST"])
+async def get_diagnostics(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
+        location = request.json["location"]
+        retries = request.json["retries"]
+        retry_interval = request.json["retry_interval"]
+        start_time = request.json["start_time"]
+        stop_time = request.json["stop_time"]
+        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].get_diagnostics(location, retries, retry_interval, start_time, stop_time)
+        return json(result)
+    else:
+        return json({"status": "Charge Point does not exist"})
 
 ###################################################################################################
 ################################## Websocket Handler ##############################################

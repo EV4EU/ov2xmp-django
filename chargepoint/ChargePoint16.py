@@ -418,3 +418,15 @@ class ChargePoint16(cp):
             return {"status": response.file_name}
         else:
             return {"status": None}
+
+    #TriggerMessage
+    async def trigger_message(self, requested_message, connector_id):
+        request = call.TriggerMessagePayload(
+            requested_message=requested_message,
+            connector_id=connector_id
+        )
+        response = await self.call(request)
+        if response is not None:
+            return {"status": response.file_name}
+        else:
+            return {"status": None}

@@ -25,29 +25,15 @@ app.ctx.CHARGEPOINTS_V16 = {}
 app.ctx.CHARGEPOINTS_V201 = {}
 app.config.FALLBACK_ERROR_FORMAT = "json"
 
-from logstash_async.transport import TcpTransport
 from logstash_async.handler import AsynchronousLogstashHandler
 
 if int(os.environ["OV2XMP_LOGSTASH_ENABLE"]):
-    ocpp_logger = logging.getLogger("ocpp")
-    transport = TcpTransport(
-        host=os.environ["OV2XMP_LOGSTASH_HOST"],
-        port=int(os.environ["OV2XMP_LOGSTASH_PORT"]),
-        ssl_enable=False,
-        ssl_verify=False,
-        keyfile=None,
-        certfile=None,
-        ca_certs=None,
-        timeout=5.0,
-    )
-
     handler = AsynchronousLogstashHandler(
         host=os.environ["OV2XMP_LOGSTASH_HOST"],
         port=int(os.environ["OV2XMP_LOGSTASH_PORT"]),
-        transport=transport,
         database_path='logstash_test.db'
     )
-
+    ocpp_logger = logging.getLogger("ocpp")
     ocpp_logger.addHandler(handler)
 
 
@@ -270,6 +256,18 @@ async def update_firmware(request: Request, chargepoint_id: str):
         retrieve_date = request.json["retrieve_date"]
         retry_interval = request.json["retry_interval"]
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].update_firmware(location, retries, retrieve_date, retry_interval)
+        return json(result)
+    else:
+        return json({"status": "Charge Point does not exist"})
+
+
+# TriggerMessage
+@app.route("/ocpp16/triggermessage/<chargepoint_id:str>", methods=["POST"])
+async def trigger_message(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
+        requested_message = request.json["requested_message"]
+        connector_id = request.json["connector_id"]
+        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].trigger_message(requested_message, connector_id)
         return json(result)
     else:
         return json({"status": "Charge Point does not exist"})

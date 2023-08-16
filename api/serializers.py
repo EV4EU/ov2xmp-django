@@ -83,3 +83,8 @@ class Ocpp16UpdateFirmwareSerializer(OcppCommandSerializer):
     retries = serializers.IntegerField(required=False)
     retrieve_date = serializers.DateTimeField()
     retry_interval = serializers.IntegerField(required=False)
+
+
+class Ocpp16TriggerMessasgeSerializer(OcppCommandSerializer):
+    requested_message = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.MessageTrigger))
+    connector_id = serializers.IntegerField(required=False)

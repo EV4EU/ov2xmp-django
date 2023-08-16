@@ -126,6 +126,13 @@ def ocpp16_update_firmware_task(chargepoint_id, location, retries, retrieve_date
     return message
 
 
+@shared_task()
+def ocpp16_trigger_message_task(chargepoint_id, requested_message, connector_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp16/updatefirmware/" + chargepoint_id, json={"requested_message": requested_message, "connector_id": connector_id}).json()
+    send_task_update(message)
+    return message
+
+
 '''
 
 @shared_task()

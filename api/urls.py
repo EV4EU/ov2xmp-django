@@ -66,4 +66,5 @@ urlpatterns = [
     path('ocpp16/setchargingprofile/', Ocpp16SetChargingProfileApiView.as_view()),
     path('ocpp16/getdiagnostics/', Ocpp16GetDiagnosticsApiView.as_view()),
     path('ocpp16/updatefirmware/', Ocpp16UpdateFirmwareApiView.as_view()),
+    path('ocpp16/triggermessage/', Ocpp16TriggerMessageApiView.as_view()),
 ]

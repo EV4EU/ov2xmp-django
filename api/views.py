@@ -335,3 +335,25 @@ class Ocpp16UpdateFirmwareApiView(GenericAPIView):
                 return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Ocpp16TriggerMessageApiView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = Ocpp16TriggerMessasgeSerializer
+    schema = AutoSchema()
+
+    def post(self, request, *args, **kwargs):
+        '''
+        Send a Trigger Message command
+        '''
+
+        serializer = Ocpp16TriggerMessasgeSerializer(data=request.data)
+        if serializer.is_valid():
+            if serializer.data["sync"]:
+                task = ocpp16_trigger_message_task(serializer.data["chargepoint_id"], serializer.data["requested_message"], serializer.data.get("connector_id", None))
+                return Response(task, status=status.HTTP_200_OK)
+            else:
+                task = ocpp16_trigger_message_task.delay(serializer.data["chargepoint_id"], serializer.data["requested_message"], serializer.data.get("connector_id", None))  # type: ignore
+                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

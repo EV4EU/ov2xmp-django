@@ -214,7 +214,11 @@ class ChargePoint16(cp):
     @on(ocpp_v16_enums.Action.DiagnosticsStatusNotification)
     def on_DiagnosticsStatusNotification(self):
         return call_result.DiagnosticsStatusNotificationPayload()
-        
+    
+    
+    @on(ocpp_v16_enums.Action.FirmwareStatusNotification)
+    def on_FirmwareNotification(self):
+        return call_result.FirmwareStatusNotificationPayload()
 
     ##########################################################################################################################
     #################### ACTIONS INITIATED BY THE CSMS #######################################################################
@@ -395,6 +399,20 @@ class ChargePoint16(cp):
             retry_interval=retry_interval,
             start_time=start_time,
             stop_time=stop_time)
+        response = await self.call(request)
+        if response is not None:
+            return {"status": response.file_name}
+        else:
+            return {"status": None}
+
+    #UpdateFirmware
+    async def update_firmware(self, location, retries, retrieve_date, retry_interval):
+        request = call.UpdateFirmwarePayload(
+            location=location,
+            retries=retries,
+            retrieve_date=retrieve_date,
+            retry_interval=retry_interval
+        )
         response = await self.call(request)
         if response is not None:
             return {"status": response.file_name}

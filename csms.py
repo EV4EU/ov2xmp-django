@@ -42,7 +42,6 @@ if int(os.environ["OV2XMP_LOGSTASH_ENABLE"]):
     )
 
     handler = AsynchronousLogstashHandler(
-
         host=os.environ["OV2XMP_LOGSTASH_HOST"],
         port=int(os.environ["OV2XMP_LOGSTASH_PORT"]),
         transport=transport,
@@ -257,6 +256,20 @@ async def get_diagnostics(request: Request, chargepoint_id: str):
         start_time = request.json["start_time"]
         stop_time = request.json["stop_time"]
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].get_diagnostics(location, retries, retry_interval, start_time, stop_time)
+        return json(result)
+    else:
+        return json({"status": "Charge Point does not exist"})
+
+
+# UpdateFirmware
+@app.route("/ocpp16/updatefirmware/<chargepoint_id:str>", methods=["POST"])
+async def update_firmware(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
+        location = request.json["location"]
+        retries = request.json["retries"]
+        retrieve_date = request.json["retrieve_date"]
+        retry_interval = request.json["retry_interval"]
+        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].update_firmware(location, retries, retrieve_date, retry_interval)
         return json(result)
     else:
         return json({"status": "Charge Point does not exist"})

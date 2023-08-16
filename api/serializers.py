@@ -76,3 +76,10 @@ class Ocpp16GetDiagnosticsSerializer(OcppCommandSerializer):
     retry_interval = serializers.IntegerField(required=False)
     start_time = serializers.DateTimeField(required=False)
     stop_time = serializers.DateTimeField(required=False)
+
+
+class Ocpp16UpdateFirmwareSerializer(OcppCommandSerializer):
+    location = serializers.CharField(max_length=2000)
+    retries = serializers.IntegerField(required=False)
+    retrieve_date = serializers.DateTimeField()
+    retry_interval = serializers.IntegerField(required=False)

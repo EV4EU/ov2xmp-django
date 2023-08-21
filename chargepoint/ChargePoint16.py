@@ -10,6 +10,7 @@ from transaction.models import TransactionStatus
 from connector.models import Connector as ConnectorModel
 from reservation.models import Reservation as ReservationModel
 from statusnotification.models import Statusnotification as StatusnotificationModel
+from sampledvalue.models import Sampledvalue as SampledvalueModel
 
 import uuid
 from django.utils import timezone
@@ -134,7 +135,8 @@ class ChargePoint16(cp):
         new_transaction = TransactionModel.objects.create(
             start_transaction_timestamp = timestamp,
             wh_meter_start = meter_start,
-            wh_meter_last = meter_start
+            wh_meter_last = meter_start,
+            wh_meter_last_timestamp = timestamp
         )
         new_transaction.save()
 
@@ -170,20 +172,37 @@ class ChargePoint16(cp):
     async def on_meterValues(self, connector_id, meter_value, **kwargs):
         transaction_id = kwargs.get('transaction_id', None)
 
-        #try:
-        #    if transaction_id is not None:
-        #        current_transaction = TransactionModel.objects.filter(transaction_id=transaction_id).update(wh_meter_last = )
-        #        #Update current_transaction.wh_meter_last with the meterValue
-        #except Exception as e:
-        #    pass
+        if transaction_id is not None:
+            wh_meter_last = None
+            wh_meter_last_timestamp = None
+            for _metervalue in meter_value:
+                wh_meter_last_timestamp = _metervalue["timestamp"]
+                for _sampledvalue in _metervalue["sampled_value"]:
+                    SampledvalueModel.objects.create(
+                        transaction = TransactionModel.objects.filter(transaction_id=transaction_id).get(),
+                        timestamp = wh_meter_last_timestamp,
+                        value = _sampledvalue["value"],
+                        context = _sampledvalue.get('context', None),
+                        format = _sampledvalue.get("format", None),
+                        measurand = _sampledvalue.get("measurand", None),
+                        phase = _sampledvalue.get('phase', None),
+                        location = _sampledvalue.get('location', None),
+                        unit = _sampledvalue.get('unit', None)
+                    ).save()
 
-        # {"connector_id":1,"transaction_id":4,"meterValue":[{"timestamp":"2023-06-07T11:42:50.849Z","sampledValue":[{"unit":"Percent","context":"Sample.Periodic","measurand":"SoC","location":"EV","value":"74"},{"unit":"V","context":"Sample.Periodic","measurand":"Voltage","value":"384.05"},{"unit":"W","context":"Sample.Periodic","measurand":"Power.Active.Import","value":"30749.76"},{"unit":"A","context":"Sample.Periodic","measurand":"Current.Import","value":"121.39"},{"unit":"Wh","context":"Sample.Periodic","value":"649.94"}]}]}]
+                    if 'unit' in _sampledvalue:
+                        if _sampledvalue['unit'] == "Wh":
+                            wh_meter_last = _sampledvalue['value']
+            
+            if wh_meter_last is not None:
+                TransactionModel.objects.filter(transaction_id=transaction_id).update(wh_meter_last = wh_meter_last, 
+                                                                                      wh_meter_last_timestamp = wh_meter_last_timestamp)
+        
         message = {
             "transaction_id": transaction_id,
             "connector_id": connector_id, 
             "meterValue": meter_value
         }
-
         await broadcast_metervalues(message)
 
         return call_result.MeterValuesPayload()

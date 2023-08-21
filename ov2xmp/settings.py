@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'chargingprofile',
     'location',
     'statusnotification',
+    'sampledvalue',
 
     'api'
 ]

@@ -20,3 +20,4 @@ sanic
 websockets
 django-countries
 Twisted[tls,http2]
+elasticsearch

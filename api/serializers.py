@@ -1,10 +1,18 @@
 from rest_framework import serializers
 from ocpp.v16 import enums as ocppv16_enums
+from enum import Enum
+
+
+class CSMS_MESSAGE_CODE(Enum):
+    CHARGING_STATION_DOES_NOT_EXIST = "Charging Station does not exist"
+    CHARGING_PROFILE_DOES_NOT_EXIST = "Charging Profile does not exist"
+    RESPONSE_RECEIVED = 200
+    TASK_SUBMITTED = "Task has been submitted successfully"
 
 
 class OcppCommandSerializer(serializers.Serializer):
     chargepoint_id = serializers.CharField(max_length=255)
-    sync = serializers.BooleanField(required=False, default=True)
+    sync = serializers.BooleanField(required=False, default=True) # type: ignore
     class Meta:
         fields = "__all__"
 
@@ -88,3 +96,9 @@ class Ocpp16UpdateFirmwareSerializer(OcppCommandSerializer):
 class Ocpp16TriggerMessasgeSerializer(OcppCommandSerializer):
     requested_message = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.MessageTrigger))
     connector_id = serializers.IntegerField(required=False)
+
+
+class Ocpp16SendLocalListSerializer(OcppCommandSerializer):
+    list_version = serializers.IntegerField()
+    local_authorization_list = serializers.ListField(required=False, default=list())
+    update_type = serializers.ChoiceField(choices=tuple(member.value for member in ocppv16_enums.UpdateType))

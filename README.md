@@ -181,11 +181,7 @@ To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that i
     # Reset
     async def reset(self, reset_type):
         request = call.ResetPayload(type = reset_type)
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
     ```
 
     Some notes:
@@ -193,7 +189,7 @@ To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that i
     - Start with a comment that refers to the OCPP command name
     - The function must be `async`.
     - The function parameters can be determined by checking the corresponding class inside `ocpp.v16.call`. For the Reset command, the parameters are derived from the `ResetPayload` class. This class has the `type` attribute, therefore we define the corresponding argument.
-    - Inside the function, we define the entire logic of the OCPP command and make all the Django ORM calls. Note that in the end we must return a specific dictionary: `{"status": XXX}`, where `XXX` is whatever output the OCPP call returns.
+    - Inside the function, we define the entire logic of the OCPP command and make all the Django ORM calls. Note that in the end we must return the entire object (dataclass) that the `call()` function returns
 
 2. Next, we have to add a REST API endpoint to the Sanic server of the CSMS (this is utilised by Django to initiate actions towards the OCPP server and the ChargePoint objects). In particular, under the CSMS REST API comment section of the `ov2xmp-django/csms.py` file, create a new function, like this:
 
@@ -204,15 +200,16 @@ To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that i
         if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
             resetType = request.json["reset_type"]
             result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].reset(resetType)
-            return json(result)
+            return json_ocpp(result)
         else:
-            return json({"status": "Charge Point does not exist"})
+            return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
     ```
 
     Some notes:
     - Start with a comment that refers to the OCPP command name
     - The `@app.route()` decorator defines the URL of the new OCPP command. It must follow the following format: `/ocpp16/XXX/<chargepoint_id>` (replace `ocpp16` with `ocpp201` if writing an endpoint for 2.0.1), where `XXX` is the name of the OCPP command. Always the method is POST and all parameters are provided in the JSON payload, except the `chargepoint_id`, which is always defined in the URL.
     - At the beginning, the check `if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None` is always performed. If successful, the parameters are extracted from `request.json` and the corresponding function that we implemented in step 1 is awaited.
+    - The result is provided to `json_ocpp()`, which is a custom-made function that converts the dataclass of the response to json and then sends the HTTP reply.
 
 3. Next, create a celery task that calls the REST API endpoint previously defined. To do that, define a function inside `api/tasks.py` like this:
 

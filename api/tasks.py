@@ -128,13 +128,26 @@ def ocpp16_update_firmware_task(chargepoint_id, location, retries, retrieve_date
 
 @shared_task()
 def ocpp16_trigger_message_task(chargepoint_id, requested_message, connector_id):
-    message = requests.post("http://" + csms_hostname + ":9000/ocpp16/updatefirmware/" + chargepoint_id, json={"requested_message": requested_message, "connector_id": connector_id}).json()
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp16/triggermessage/" + chargepoint_id, json={"requested_message": requested_message, "connector_id": connector_id}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp16_get_local_list_version_task(chargepoint_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp16/getlocallistversion/" + chargepoint_id).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp16_send_local_list_task(chargepoint_id, list_version, local_authorization_list, update_type):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp16/sendlocallist/" + chargepoint_id, json={"list_version": list_version, "local_authorization_list": local_authorization_list, "update_type": update_type}).json()
     send_task_update(message)
     return message
 
 
 '''
-
 @shared_task()
 def dummy_task(param1, param2):
     time.sleep(5)

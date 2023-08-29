@@ -1,16 +1,15 @@
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import permissions
 from .serializers import *
 from .tasks import *
-from drf_spectacular.openapi import AutoSchema
+from .serializers import CSMS_MESSAGE_CODE
+from rest_framework_simplejwt.authentication import JWTAuthentication  
 
 
-class Ocpp16ResetApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16ResetApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16ResetSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -24,15 +23,14 @@ class Ocpp16ResetApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_reset_task.delay(serializer.data["chargepoint_id"], serializer.data["reset_type"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16RemoteStartTrasactionApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16RemoteStartTrasactionApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16RemoteStartTransactionSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -46,15 +44,14 @@ class Ocpp16RemoteStartTrasactionApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_remote_start_transaction.delay(serializer.data["chargepoint_id"], request.data["connector_id"], request.data["id_tag"], request.data.get("charging_profile", None)) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16RemoteStopTrasactionApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16RemoteStopTrasactionApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16RemoteStopTransactionSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -68,15 +65,14 @@ class Ocpp16RemoteStopTrasactionApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_remote_stop_transaction.delay(serializer.data["chargepoint_id"], serializer.data["transaction_id"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16ReserveNowApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16ReserveNowApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16ReserveNowSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -90,15 +86,14 @@ class Ocpp16ReserveNowApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_reserve_now.delay(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["id_tag"], serializer.data["expiry_date"], serializer.data["reservation_id"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16CancelReservationApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16CancelReservationApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16CancelReservationSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -112,15 +107,14 @@ class Ocpp16CancelReservationApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_cancel_reservation.delay(serializer.data["chargepoint_id"], serializer.data["reservation_id"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16ChangeAvailabilityApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16ChangeAvailabilityApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16ChangeAvailabilitySerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -134,15 +128,14 @@ class Ocpp16ChangeAvailabilityApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_change_availability.delay(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["availability_type"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16ChangeConfigurationApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16ChangeConfigurationApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16ChangeConfigurationSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -156,19 +149,18 @@ class Ocpp16ChangeConfigurationApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_change_configuration.delay(serializer.data["chargepoint_id"], serializer.data["key"], serializer.data["value"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16ClearCacheApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16ClearCacheApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = OcppCommandSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
-        Send a Change Cache command
+        Send a Clear Cache command
         '''
 
         serializer = OcppCommandSerializer(data=request.data)
@@ -178,15 +170,14 @@ class Ocpp16ClearCacheApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_clear_cache.delay(serializer.data["chargepoint_id"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16UnlockConnectorApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16UnlockConnectorApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16UnlockConnectorSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -200,15 +191,14 @@ class Ocpp16UnlockConnectorApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_unlock_connector.delay(serializer.data["chargepoint_id"], serializer.data["connector_id"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16GetConfigurationApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16GetConfigurationApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16GetConfigurationSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -222,15 +212,14 @@ class Ocpp16GetConfigurationApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_get_configuration.delay(serializer.data["chargepoint_id"], serializer.data["keys"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16GetCompositeScheduleApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16GetCompositeScheduleApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16GetCompositeScheduleSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -244,15 +233,14 @@ class Ocpp16GetCompositeScheduleApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_get_composite_schedule_task.delay(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["duration"], serializer.data["charging_rate_unit_type"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16ClearChargingProfileApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16ClearChargingProfileApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16ClearChargingProfileSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -266,15 +254,14 @@ class Ocpp16ClearChargingProfileApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_clear_charging_profile_task.delay(serializer.data["chargepoint_id"], serializer.data["charging_profile_id"], serializer.data["connector_id"], serializer.data["charging_profile_purpose_type"], serializer.data["stack_level"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 
-class Ocpp16SetChargingProfileApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16SetChargingProfileApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16SetChargingProfileSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -288,15 +275,14 @@ class Ocpp16SetChargingProfileApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_set_charging_profile_task.delay(serializer.data["chargepoint_id"], serializer.data["connector_id"], serializer.data["charging_profile_id"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16GetDiagnosticsApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16GetDiagnosticsApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16GetDiagnosticsSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -310,15 +296,14 @@ class Ocpp16GetDiagnosticsApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_get_diagnostics_task.delay(serializer.data["chargepoint_id"], serializer.data["location"], serializer.data["retries"], serializer.data["retry_interval"], serializer.data["start_time"], serializer.data["stop_time"]) # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16UpdateFirmwareApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16UpdateFirmwareApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16UpdateFirmwareSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -332,15 +317,14 @@ class Ocpp16UpdateFirmwareApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_update_firmware_task.delay(serializer.data["chargepoint_id"], serializer.data["location"], serializer.data.get("retries", None), serializer.data["retrieve_date"], serializer.data.get("retry_interval", None))  # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Ocpp16TriggerMessageApiView(GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class Ocpp16TriggerMessageApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = Ocpp16TriggerMessasgeSerializer
-    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -354,6 +338,48 @@ class Ocpp16TriggerMessageApiView(GenericAPIView):
                 return Response(task, status=status.HTTP_200_OK)
             else:
                 task = ocpp16_trigger_message_task.delay(serializer.data["chargepoint_id"], serializer.data["requested_message"], serializer.data.get("connector_id", None))  # type: ignore
-                return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Ocpp16GetLocalListVersionApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
+    serializer_class = OcppCommandSerializer
+
+    def post(self, request, *args, **kwargs):
+        '''
+        Send a Get Local List Version command
+        '''
+
+        serializer = OcppCommandSerializer(data=request.data)
+        if serializer.is_valid():
+            if serializer.data["sync"]:
+                task = ocpp16_get_local_list_version_task(serializer.data["chargepoint_id"])
+                return Response(task, status=status.HTTP_200_OK)
+            else:
+                task = ocpp16_get_local_list_version_task.delay(serializer.data["chargepoint_id"]) # type: ignore
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Ocpp16SendLocalListApiView(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
+    serializer_class = Ocpp16SendLocalListSerializer
+
+    def post(self, request, *args, **kwargs):
+        '''
+        Send a Send Local List command
+        '''
+
+        serializer = Ocpp16SendLocalListSerializer(data=request.data)
+        if serializer.is_valid():
+            if serializer.data["sync"]:
+                task = ocpp16_get_local_list_version_task(serializer.data["chargepoint_id"], serializer.data["list_version"], serializer.data["local_authorization_list"], serializer.data["update_type"])
+                return Response(task, status=status.HTTP_200_OK)
+            else:
+                task = ocpp16_get_local_list_version_task.delay(serializer.data["chargepoint_id"], serializer.data["list_version"], serializer.data["local_authorization_list"], serializer.data["update_type"]) # type: ignore
+                return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -231,7 +231,7 @@ class ChargePoint16(cp):
 
 
     @on(ocpp_v16_enums.Action.DiagnosticsStatusNotification)
-    def on_DiagnosticsStatusNotification(self):
+    def on_DiagnosticsStatusNotification(self, status):
         return call_result.DiagnosticsStatusNotificationPayload()
     
     
@@ -246,11 +246,7 @@ class ChargePoint16(cp):
     # Reset
     async def reset(self, reset_type):
         request = call.ResetPayload(type = reset_type)
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     # RemoteStartTransaction
     async def remote_start_transaction(self, id_tag, connector_id, charging_profile):
@@ -259,22 +255,14 @@ class ChargePoint16(cp):
             id_tag=id_tag,
             charging_profile=charging_profile
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
-        
+        return await self.call(request)
+
     # RemoteStopTransaction
     async def remote_stop_transaction(self, transaction_id):
         request = call.RemoteStopTransactionPayload(
             transaction_id=transaction_id
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
     
     # ReserveNow
     async def reserve_now(self, connector_id, id_tag, expiry_date, reservation_id):
@@ -301,9 +289,9 @@ class ChargePoint16(cp):
                     reservation_id=reservation_id,
                     expiry_date=expiry_date
                 ).save()
-            return {"status": response.status}
+            return response
         else:
-            return {"status": None}
+            return None
 
     # CancelReservation
     async def cancel_reservation(self, reservation_id):
@@ -315,9 +303,9 @@ class ChargePoint16(cp):
             if response.status == ocpp_v16_enums.ReservationStatus.accepted:
                 reservation_to_delete = ReservationModel.objects.filter(connector__chargepoint__chargepoint_id=self.id, reservation_id=reservation_id)
                 reservation_to_delete.delete()
-            return {"status": response.status}
+            return response
         else:
-            return {"status": None}
+            return None
         
     # ChangeAvailability
     async def change_availability(self, connector_id, availability_type):
@@ -325,11 +313,7 @@ class ChargePoint16(cp):
             connector_id=connector_id,
             type=availability_type
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     # ChangeConfiguration
     async def change_configuration(self, key, value):
@@ -337,42 +321,26 @@ class ChargePoint16(cp):
             key=key,
             value=value
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
     
     # ClearCache
     async def clear_cache(self):
         request = call.ClearCachePayload()
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
     
     # UnlockConnector
     async def unlock_connector(self, connector_id):
         request = call.UnlockConnectorPayload(
             connector_id=connector_id
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     # GetConfiguration
     async def get_configuration(self, keys):
         request = call.GetConfigurationPayload(
             key=keys
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     # GetCompositeSchedule
     async def get_composite_schedule(self, connector_id, duration, charging_rate_unit_type):
@@ -380,11 +348,7 @@ class ChargePoint16(cp):
             connector_id= connector_id,
             duration= duration,
             charging_rate_unit= charging_rate_unit_type)
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
         
     # ClearChargingProfile
     async def clear_charging_profile(self, charging_profile_id, connector_id, charging_profile_purpose_type, stack_level):
@@ -393,22 +357,14 @@ class ChargePoint16(cp):
             connector_id = connector_id,
             charging_profile_purpose = charging_profile_purpose_type,
             stack_level = stack_level)
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
         
     #SetChargingProfile
     async def set_charging_profile(self, connector_id, charging_profile):
         request = call.SetChargingProfilePayload(
             connector_id=connector_id,
             cs_charging_profiles = charging_profile)
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     #GetDiagnostics
     async def get_diagnostics(self, location, retries, retry_interval, start_time, stop_time):
@@ -418,11 +374,7 @@ class ChargePoint16(cp):
             retry_interval=retry_interval,
             start_time=start_time,
             stop_time=stop_time)
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.file_name}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     #UpdateFirmware
     async def update_firmware(self, location, retries, retrieve_date, retry_interval):
@@ -432,11 +384,7 @@ class ChargePoint16(cp):
             retrieve_date=retrieve_date,
             retry_interval=retry_interval
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.file_name}
-        else:
-            return {"status": None}
+        return await self.call(request)
 
     #TriggerMessage
     async def trigger_message(self, requested_message, connector_id):
@@ -444,8 +392,18 @@ class ChargePoint16(cp):
             requested_message=requested_message,
             connector_id=connector_id
         )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.file_name}
-        else:
-            return {"status": None}
+        return await self.call(request)
+
+    #GetLocalListVersion
+    async def get_local_list_version(self):
+        request = call.GetLocalListVersionPayload()
+        return await self.call(request)
+
+    #SendLocalList
+    async def send_local_list(self, list_version, update_type, local_authorization_list=list()):
+        request = call.SendLocalListPayload(
+            list_version=list_version,
+            update_type=update_type,
+            local_authorization_list=local_authorization_list
+        )
+        return await self.call(request)

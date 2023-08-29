@@ -21,3 +21,5 @@ websockets
 django-countries
 Twisted[tls,http2]
 elasticsearch
+djangorestframework-simplejwt[crypto]
+django-filter

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import os
 from django.contrib.messages import constants as messages
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,7 +68,9 @@ INSTALLED_APPS = [
     'statusnotification',
     'sampledvalue',
 
-    'api'
+    'api',
+    'rest_framework_simplejwt',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -156,6 +159,11 @@ if int(os.environ['OV2XMP_AUTH_LDAP_ENABLE']):
         # AUTH_LDAP_USER_ATTR_MAP_EMAIL is usually `mail`.
         "email": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_EMAIL']
     }
+
+# === SimpleJWT Settings ===
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
+}
 
 ###########################################################################
 ###########################################################################
@@ -257,7 +265,6 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-
 # === Celery settings ===
 CELERY_BROKER_URL = "redis://" + os.environ['OV2XMP_REDIS_BROKER_HOST'] + ":" + os.environ['OV2XMP_REDIS_BROKER_PORT'] + "/"
 CELERY_RESULT_BACKEND = 'django-db'
@@ -282,7 +289,12 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 REST_FRAMEWORK = {
     # YOUR SETTINGS
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
 }
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'O-V2X-MP REST API',

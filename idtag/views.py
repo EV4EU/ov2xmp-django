@@ -5,13 +5,10 @@ from django.contrib import messages
 from .forms import IdTagForm
 from django.contrib.auth.decorators import login_required
 from idtag.models import IdTag
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import permissions
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from .models import IdTag
 from .serializers import IdTagSerializer
-from drf_spectacular.openapi import AutoSchema
+from rest_framework_simplejwt.authentication import JWTAuthentication  
 
 
 @login_required
@@ -57,7 +54,6 @@ def delete_idTag(request):
 
 @login_required
 def edit_idTag(request):
-    
     splitted_url = request.get_full_path().split('/')
     if len(splitted_url) > 3:
         idtoken = splitted_url[3]      
@@ -92,93 +88,14 @@ def edit_idTag(request):
         return render(request, 'idtag/idtag-edit.html', context)
 
 
-class IdtagApiView(GenericAPIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticated]
+class IdtagApiView(ListCreateAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = IdTagSerializer
     queryset = IdTag.objects.all()
-    schema = AutoSchema()
-
-    # 1. List all
-    def get(self, request, *args, **kwargs):
-        '''
-        List all the ID Tags
-        '''
-        idtags = IdTag.objects.all()
-        serializer = IdTagSerializer(idtags, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    # 2. Create
-    def post(self, request, *args, **kwargs):
-        '''
-        Create the ID Tag with given data
-        '''
-
-        serializer = IdTagSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class IdtagDetailApiView(GenericAPIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticated]
+class IdtagDetailApiView(RetrieveUpdateDestroyAPIView):
+    authentication_classes = [JWTAuthentication]
     serializer_class = IdTagSerializer
-    schema = AutoSchema()
-
-    def get_object(self, id_token):        
-        try:
-            return IdTag.objects.get(pk=id_token)
-        except IdTag.DoesNotExist:
-            return None
-
-    # 3. Retrieve
-    def get(self, request, id_token, *args, **kwargs):
-        '''
-        Retrieves the Chargepoint with given chargepoint_id
-        '''
-        idtag_instance = self.get_object(id_token=id_token)
-        if not idtag_instance:
-            return Response(
-                {"res": "Object with todo id does not exists"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = IdTagSerializer(idtag_instance)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    # 4. Update
-    def put(self, request, id_token, *args, **kwargs):
-        '''
-        Updates the Chargepoint item with given chargepoint_id, if exists
-        '''
-        idtag_instance = self.get_object(id_token)
-        if not idtag_instance:
-            return Response(
-                {"res": "Object with todo id does not exists"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        serializer = IdTagSerializer(instance=idtag_instance, data=request.data, partial = True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # 5. Delete
-    def delete(self, request, id_token, *args, **kwargs):
-        '''
-        Deletes the Chargepoint item with given chargepoint_id, if exists
-        '''
-        idtag_instance = self.get_object(id_token)
-        if not idtag_instance:
-            return Response(
-                {"res": "Object with todo id does not exists"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        idtag_instance.delete()
-        return Response(
-            {"res": "Object deleted!"},
-            status=status.HTTP_200_OK
-        )
+    lookup_url_kwarg = 'id_token'
+    queryset = IdTag.objects.all()

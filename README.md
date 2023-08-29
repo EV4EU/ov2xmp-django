@@ -109,6 +109,27 @@ To access the Swagger page of the O-V2X-MP REST API, visit the following page:
 
 `http://ov2xmp.trsc.net:8000/api`
 
+Follow the steps bellow to get authorization based on JWT:
+
+1. In the Swagger page, scroll down to the `token` section in order to generate a new JWT token (in case you dont have a token already)
+
+2. Click on the `/api/token/` endpoint, then click on the `Try it out` button.
+
+3. In the request body, specify your username and password credentials. Then, click `Execute`.
+
+    The result will be something like this:
+
+    ```json
+    {
+        "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY5MzM4NjEzMSwiaWF0IjoxNjkzMjk5NzMxLCJqdGkiOiJhZjdjZWZmNmVkYTk0ZjljOTY0YTQ0NDljYmQ3NDE2OCIsInVzZXJfaWQiOjF9.kVQ1N8NH2RMkQBE1fbEAC7RwqDPD-nlKZbozxuTmPlQ",
+        "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk1ODkxNzMxLCJpYXQiOjE2OTMyOTk3MzEsImp0aSI6IjlkNjkyNTU2ZWYzMDQ3YTFiZDg0Mzc5ZTZiMzJiMTExIiwidXNlcl9pZCI6MX0.up0gL5vhVlTMkQ1qRgrxIXo4rUbZl1N4tzlA47O4PxA"
+    }
+    ```
+
+4. Copy the value of the `access` key.
+
+5. Scroll up and click on the `Authorize` button and paste the value in the `jwtAuth` field. Finally, click the `Authorize` button.
+
 ## O-V2X-MP Django Admin page
 
 The django admin page allows you to view and modify all the django objects of O-V2X-MP (e.g., chargepoints, idTags, charging profiles, tasks, etc). To access that page, visit the following link:
@@ -245,10 +266,9 @@ To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that i
 5. Next, define the API View inside `api/views.py` like the following:
 
     ```python
-    class Ocpp16ResetApiView(GenericAPIView):
-        permission_classes = [permissions.IsAuthenticated]
+    class Ocpp16ResetApiView(CreateAPIView):
+        authentication_classes = [JWTAuthentication]
         serializer_class = Ocpp16ResetSerializer
-        schema = AutoSchema()
 
         def post(self, request, *args, **kwargs):
             '''
@@ -259,11 +279,10 @@ To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that i
             if serializer.is_valid():
                 if serializer.data["sync"]:
                     task = ocpp16_reset_task(serializer.data["chargepoint_id"], serializer.data["reset_type"])
-                    task["success"] = True
                     return Response(task, status=status.HTTP_200_OK)
                 else:
                     task = ocpp16_reset_task.delay(serializer.data["chargepoint_id"], serializer.data["reset_type"]) # type: ignore
-                    return Response({"success": True, "status": "Task has been submitted successfully", "task_id": task.id}, status=status.HTTP_200_OK)
+                    return Response({"message_code": CSMS_MESSAGE_CODE.TASK_SUBMITTED.name, "message": CSMS_MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     ```
@@ -271,7 +290,7 @@ To implement a REST API endpoint for issuing an OCPP 1.6 or 2.0.1 command that i
     Some notes:
     - Keep the above structure/logic.
     - Replace the serializer in `serializer_class`.
-    - It's important to provide a command description in the comment under the `post()` function (this comment is parsed in order to automatically generate the OpenAPI spec).
+    - It is important to provide a command description in the comment under the `post()` function (this comment is parsed in order to automatically generate the OpenAPI spec).
     - In `serializer = Ocpp16ResetSerializer(data=request.data)` replace the serializer with yours.
     - Inside the `if serializer.data["sync"]:` statement, replace the task function and its corresponding parameters.
 

@@ -23,3 +23,4 @@ Twisted[tls,http2]
 elasticsearch
 djangorestframework-simplejwt[crypto]
 django-filter
+python-logstash-async

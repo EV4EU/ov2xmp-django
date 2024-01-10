@@ -1,6 +1,7 @@
 from django.db import models
 from django_countries.fields import CountryField
 from uuid import uuid4
+from timezone_field import TimeZoneField
 
 
 # Create your models here.
@@ -11,3 +12,5 @@ class Location(models.Model):
     street_address = models.CharField(max_length=255)
     city = models.CharField(max_length=20)
     name = models.CharField(max_length=20)
+    timezone = TimeZoneField(default='Europe/Athens')
+    residential = models.BooleanField(default=True)

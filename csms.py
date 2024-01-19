@@ -37,6 +37,8 @@ if int(os.environ["OV2XMP_LOGSTASH_ENABLE"]):
     ocpp_logger = logging.getLogger("ocpp")
     ocpp_logger.addHandler(handler)
 
+OV2XMP_OCPP_TIMEOUT = int(os.environ.get("OV2XMP_OCPP_TIMEOUT", 30))
+
 
 # json() function of Sanic compatible with dataclasses returned by the ocpp library
 def json_ocpp(input):
@@ -322,7 +324,7 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
     logger.info("Protocols Matched: %s", websocket.subprotocol)
     logger.info("Charge Point connected: %s, from: %s", charge_point_id, request.ip)
 
-    cp = ChargePoint16(charge_point_id, websocket)
+    cp = ChargePoint16(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)
     app.ctx.CHARGEPOINTS_V16.update({charge_point_id: cp})
 
     new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)

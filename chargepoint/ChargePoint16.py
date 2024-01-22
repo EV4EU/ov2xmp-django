@@ -124,7 +124,7 @@ class ChargePoint16(cp):
     @on(ocpp_v16_enums.Action.Authorize)
     def on_authorize(self, id_tag):
         result = authorize_idTag(id_tag)
-        return call_result.AuthorizePayload(id_tag_info=result["status"]) # type: ignore
+        return call_result.AuthorizePayload(id_tag_info=result) # type: ignore
 
 
     @on(ocpp_v16_enums.Action.StartTransaction)

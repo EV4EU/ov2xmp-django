@@ -36,15 +36,15 @@ def authorize_idTag(id_token):
             if not idTag_object.revoked:
                 if idTag_object.expiry_date is not None:
                     if idTag_object.expiry_date.timestamp() > datetime.utcnow().timestamp():
-                        return {"status": ocpp_v16_enums.AuthorizationStatus.accepted}
+                        return {"status": ocpp_v16_enums.AuthorizationStatus.accepted.value}
                     else:
-                        return {"status": ocpp_v16_enums.AuthorizationStatus.expired}
+                        return {"status": ocpp_v16_enums.AuthorizationStatus.expired.value}
                 else:
-                    return {"status": ocpp_v16_enums.AuthorizationStatus.accepted}
+                    return {"status": ocpp_v16_enums.AuthorizationStatus.accepted.value}
             else:
-                return {"status": ocpp_v16_enums.AuthorizationStatus.blocked}
+                return {"status": ocpp_v16_enums.AuthorizationStatus.blocked.value}
         except idTagModel.DoesNotExist:
-            return {"status": ocpp_v16_enums.AuthorizationStatus.invalid}
+            return {"status": ocpp_v16_enums.AuthorizationStatus.invalid.value}
     else:
         return {"status": None}
 

@@ -2,6 +2,7 @@ from ocpp.routing import on
 from ocpp.v201 import ChargePoint as cp
 from ocpp.v201 import call_result, call
 import ocpp.v201.enums as ocpp_enums
+import ocpp.v201.datatypes as ocpp_datatypes
 from ocpp.v201.enums import Action
 
 from chargepoint.models import Chargepoint as ChargepointModel
@@ -28,41 +29,22 @@ async def broadcast_metervalues(message):
         await channel_layer.group_send("metervalues_updates", {"type": "websocket.send", "text": message})
 
 
-def authorize_idTag(id_token):
-    if id_token is not None: 
-        try:
-            idTag_object = idTagModel.objects.get(idToken=id_token)
-            if not idTag_object.revoked:
-                if idTag_object.expiry_date is not None:
-                    if idTag_object.expiry_date.timestamp() > datetime.utcnow().timestamp():
-                        return {"status": ocpp_enums.AuthorizationStatus.accepted}
-                    else:
-                        return {"status": ocpp_enums.AuthorizationStatus.expired}
-                else:
-                    return {"status": ocpp_enums.AuthorizationStatus.accepted}
-            else:
-                return {"status": ocpp_enums.AuthorizationStatus.blocked}
-        except idTagModel.DoesNotExist:
-            return {"status": ocpp_enums.AuthorizationStatus.invalid}
-    else:
-        return {"status": None}
-
-
 class ChargePoint201(cp):
     ##########################################################################################################################
     ###################  HANDLE INCOMING OCPP MESSAGES #######################################################################
     ##########################################################################################################################
-    @on(Action.BootNotification)
-    def on_boot_notification(self, charge_point_model, charge_point_vendor, **kwargs):
 
-        charge_box_serial_number = kwargs.get('charge_box_serial_number', None) 
-        charge_point_serial_number = kwargs.get('charge_point_serial_number', None)
-        firmware_version = kwargs.get('firmware_version', None)
+    @on(Action.BootNotification)
+    def on_boot_notification(self, charging_station, reason, **kwargs):
+
+        charge_point_serial_number = charging_station.get("serial_number", None)
+        chargepoint_model = charging_station["model"]
+        firmware_version = charging_station["firmware_version"]
+        chargepoint_vendor = charging_station["vendor_name"]
 
         ChargepointModel.objects.filter(pk=self.id).update(
-            chargepoint_model = charge_point_model, 
-            chargepoint_vendor = charge_point_vendor,
-            chargebox_serial_number = charge_box_serial_number,
+            chargepoint_model = chargepoint_model, 
+            chargepoint_vendor = chargepoint_vendor,
             chargepoint_serial_number = charge_point_serial_number,
             firmware_version = firmware_version
         ) 
@@ -70,7 +52,7 @@ class ChargePoint201(cp):
         return call_result.BootNotificationPayload(
             current_time=datetime.utcnow().isoformat(),
             interval=10,
-            status=ocpp_enums.RegistrationStatus.accepted,
+            status=ocpp_enums.RegistrationStatusType.accepted,
         )
     
 
@@ -85,110 +67,25 @@ class ChargePoint201(cp):
 
 
     @on(Action.StatusNotification)
-    def on_status_notification(self, connector_id, status, **kwargs):
+    def on_status_notification(self, timestamp, connector_status, evse_id, connector_id, **kwargs):
+        
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
         if connector_id != 0:
             connector_to_update = ConnectorModel.objects.filter(chargepoint=current_cp, connectorid=connector_id)
             if connector_to_update.exists():
-                connector_to_update.update(connector_status = status)
+                connector_to_update.update(connector_status = connector_status)
             else:
                 ConnectorModel.objects.create(
                     uuid = uuid.uuid4(),
                     connectorid = connector_id,
-                    connector_status = status,
+                    connector_status = connector_status,
                     chargepoint = current_cp
                 )
         else:
-            current_cp.chargepoint_status = status
+            current_cp.chargepoint_status = connector_status
             current_cp.save()
         
         return call_result.StatusNotificationPayload()
-
-
-    @on(Action.Authorize)
-    def on_authorize(self, id_tag):
-        result = authorize_idTag(id_tag)
-        return call_result.AuthorizePayload(id_tag_info=result["status"]) # type: ignore
-
-
-    @on(Action.StartTransaction)
-    def on_startTransaction(self, connector_id, id_tag, meter_start, timestamp, **kwargs):
-
-        new_transaction = TransactionModel.objects.create(
-            start_transaction_timestamp = timestamp,
-            wh_meter_start = meter_start,
-            wh_meter_last = meter_start
-        )
-        new_transaction.save()
-
-        result = authorize_idTag(id_tag)
-        
-        if result["status"] == ocpp_enums.AuthorizationStatus.accepted:
-            new_transaction.id_tag = idTagModel.objects.get(idToken=id_tag)
-            reservation_id = kwargs.get('reservation_id', None)
-            if reservation_id is not None:
-                ReservationModel.objects.filter(connector__chargepoint__chargepoint_id = self.id, reservation_id=reservation_id).delete()
-            new_transaction.status = TransactionStatus.started
-        else:
-            new_transaction.stop_transaction_timestamp = timezone.now()
-            new_transaction.wh_meter_stop = meter_start
-            new_transaction.reason_stopped = TransactionStatus.unauthorized
-            new_transaction.status = TransactionStatus.unauthorized
-        
-        new_transaction.save()
-        
-        return call_result.StartTransactionPayload(
-            transaction_id = new_transaction.transaction_id,
-            id_tag_info = {
-                "status": result["status"]
-            }
-        )
-
-
-    @on(Action.MeterValues)
-    async def on_meterValues(self, connector_id, meter_value, **kwargs):
-        transaction_id = kwargs.get('transaction_id', None)
-
-        #try:
-        #    if transaction_id is not None:
-        #        current_transaction = TransactionModel.objects.filter(transaction_id=transaction_id).update(wh_meter_last = )
-        #        #Update current_transaction.wh_meter_last with the meterValue
-        #except Exception as e:
-        #    pass
-
-        # {"connector_id":1,"transaction_id":4,"meterValue":[{"timestamp":"2023-06-07T11:42:50.849Z","sampledValue":[{"unit":"Percent","context":"Sample.Periodic","measurand":"SoC","location":"EV","value":"74"},{"unit":"V","context":"Sample.Periodic","measurand":"Voltage","value":"384.05"},{"unit":"W","context":"Sample.Periodic","measurand":"Power.Active.Import","value":"30749.76"},{"unit":"A","context":"Sample.Periodic","measurand":"Current.Import","value":"121.39"},{"unit":"Wh","context":"Sample.Periodic","value":"649.94"}]}]}]
-        message = {
-            "transaction_id": transaction_id,
-            "connector_id": connector_id, 
-            "meterValue": meter_value
-        }
-
-        await broadcast_metervalues(message)
-
-        return call_result.MeterValuesPayload()
-
-
-    @on(Action.StopTransaction)
-    def on_stopTransaction(self, meter_stop, timestamp, transaction_id, **kwargs): #reason, id_tag, transaction_data):
-        
-        try:
-            current_transaction = TransactionModel.objects.get(transaction_id=transaction_id)
-
-            current_transaction.stop_transaction_timestamp = timestamp
-            current_transaction.wh_meter_stop = meter_stop
-            current_transaction.status = TransactionStatus.finished
-            reason = kwargs.get('reason', None)
-            if reason is not None:
-                current_transaction.reason_stopped = reason
-
-            current_transaction.save()
-
-            return call_result.StopTransactionPayload()
-        
-        except DatabaseError as e:
-            logging.error("Connection error with Django DB. The transaction details for # " + str(transaction_id) + " have not been saved.")
-            return call_result.StopTransactionPayload()
-
 
     ##########################################################################################################################
     #################### ACTIONS INITIATED BY THE CSMS #######################################################################
@@ -202,125 +99,4 @@ class ChargePoint201(cp):
             return {"status": response.status}
         else:
             return {"status": None}
-
-    # RemoteStartTransaction
-    async def remote_start_transaction(self, id_tag, connector_id, charging_profile):
-        request = call.RemoteStartTransactionPayload(
-            connector_id=connector_id,
-            id_tag=id_tag,
-            charging_profile=charging_profile
-        )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
-        
-    # RemoteStopTransaction
-    async def remote_stop_transaction(self, transaction_id):
-        request = call.RemoteStopTransactionPayload(
-            transaction_id=transaction_id
-        )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
     
-    # ReserveNow
-    async def reserve_now(self, connector_id, id_tag, expiry_date, reservation_id):
-
-        if reservation_id is None:
-            # If reservation_id is not provided, we need to find the maximum reservation_id that exists for the particular EVCS
-            # Get all reservations of the specific EVCS and find the max reservation_id value. then, add +1 (so we do not replace any existing reservation_id on the particular EVCS)
-            reservation_id = ReservationModel.objects.filter(connector__chargepoint__chargepoint_id=self.id).aggregate(Max('reservation_id'))["reservation_id__max"] + 1
-            
-        request = call.ReserveNowPayload(
-            connector_id=connector_id,
-            id_tag=id_tag,
-            expiry_date=expiry_date,
-            reservation_id=reservation_id
-        )
-
-        response = await self.call(request)
-        if response is not None:
-            # Create the reservation instance, if status accepted
-            if response.status == ocpp_v16_enums.ReservationStatus.accepted:
-                connector = ConnectorModel.objects.filter(chargepoint__chargepoint_id=self.id, connectorid=connector_id)
-                ReservationModel.objects.create(
-                    connector=connector,
-                    reservation_id=reservation_id,
-                    expiry_date=expiry_date
-                ).save()
-            return {"status": response.status}
-        else:
-            return {"status": None}
-
-    # CancelReservation
-    async def cancel_reservation(self, reservation_id):
-        request = call.CancelReservationPayload(
-            reservation_id=reservation_id
-        )
-        response = await self.call(request)
-        if response is not None:
-            if response.status == ocpp_v16_enums.ReservationStatus.accepted:
-                reservation_to_delete = ReservationModel.objects.filter(connector__chargepoint__chargepoint_id=self.id, reservation_id=reservation_id)
-                reservation_to_delete.delete()
-            return {"status": response.status}
-        else:
-            return {"status": None}
-        
-    # ChangeAvailability
-    async def change_availability(self, connector_id, availability_type):
-        request = call.ChangeAvailabilityPayload(
-            connector_id=connector_id,
-            type=availability_type
-        )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
-
-    # ChangeConfiguration
-    async def change_configuration(self, key, value):
-        request = call.ChangeConfigurationPayload(
-            key=key,
-            value=value
-        )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
-    
-    # ClearCache
-    async def clear_cache(self):
-        request = call.ClearCachePayload()
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
-    
-    # UnlockConnector
-    async def unlock_connector(self, connector_id):
-        request = call.UnlockConnectorPayload(
-            connector_id=connector_id
-        )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response.status}
-        else:
-            return {"status": None}
-
-    # GetConfiguration
-    async def get_configuration(self, keys):
-        request = call.GetConfigurationPayload(
-            key=keys
-        )
-        response = await self.call(request)
-        if response is not None:
-            return {"status": response}
-        else:
-            return {"status": None}

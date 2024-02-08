@@ -9,7 +9,7 @@ from chargepoint.models import OcppProtocols
 from ocpp.v16.enums import ChargePointStatus
 from chargepoint.ChargePoint16 import ChargePoint16
 from api.serializers import CSMS_MESSAGE_CODE
-# from chargepoint.ChargePoint201 import ChargePoint201
+from chargepoint.ChargePoint201 import ChargePoint201
 
 import asyncio
 from asgiref.sync import sync_to_async
@@ -55,7 +55,7 @@ def json_ocpp(input):
 
 
 ###################################################################################################
-################################## CSMS REST API ##################################################
+############################# CSMS REST API - OCPP 1.6 ############################################
 ###################################################################################################
 
 # Reset (hard or soft)
@@ -311,27 +311,58 @@ async def send_local_list(request: Request, chargepoint_id: str):
     else:
         return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
 
+###################################################################################################
+############################ CSMS REST API - OCPP 2.0.1 ###########################################
+###################################################################################################
 
+#ReserveNow - OCPP 2.0.1
+@app.route("/ocpp201/reservenow/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_reserve_now(request: Request, chargepoint_id: str):
+    pass
+
+
+#CancelReservation - OCPP 2.0.1
+@app.route("/ocpp201/cancelreservation/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_cancel_reservation(request: Request, chargepoint_id: str):
+    pass
+
+
+#GetCompositeSchedule - OCPP 2.0.1
+@app.route("/ocpp201/getcompositeschedule/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_get_composite_schedule(request: Request, chargepoint_id: str):
+    pass
+
+
+#SetChargingProfile - OCPP 2.0.1
+@app.route("/ocpp201/setchargingprofile/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_set_charging_profile(request: Request, chargepoint_id: str):
+    pass
 
 ###################################################################################################
 ################################## Websocket Handler ##############################################
 ###################################################################################################
 
-@app.websocket("/ws/ocpp/<charge_point_id:str>", subprotocols=['ocpp1.6'])
+@app.websocket("/ws/ocpp/<charge_point_id:str>", subprotocols=['ocpp1.6', 'ocpp2.0.1'])
 async def on_connect(request: Request, websocket: Websocket, charge_point_id: str):
     # For every new charge point that connects, create a ChargePoint instance and start listening for messages.
 
     logger.info("Protocols Matched: %s", websocket.subprotocol)
     logger.info("Charge Point connected: %s, from: %s", charge_point_id, request.ip)
 
-    cp = ChargePoint16(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)
-    app.ctx.CHARGEPOINTS_V16.update({charge_point_id: cp})
+    if websocket.subprotocol == 'ocpp1.6':
+        cp = ChargePoint16(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)
+        app.ctx.CHARGEPOINTS_V16.update({charge_point_id: cp})
+        ocpp_version = OcppProtocols.ocpp16
+    else:
+        cp = ChargePoint201(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)
+        app.ctx.CHARGEPOINTS_V201.update({charge_point_id: cp})
+        ocpp_version = OcppProtocols.ocpp201
 
     new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
 
     if not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
         await ChargepointModel.objects.acreate(chargepoint_id = charge_point_id, 
-                                                ocpp_version=OcppProtocols.ocpp16,
+                                                ocpp_version=ocpp_version,
                                                 chargepoint_status=ChargePointStatus.available.value,
                                                 ip_address=request.ip,
                                                 websocket_port=request.port)
@@ -343,5 +374,9 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
 
     except asyncio.exceptions.CancelledError:
         logger.error("Disconnected from CP: %s", charge_point_id)
-        ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
-        app.ctx.CHARGEPOINTS_V16[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect
+        if cp is ChargePoint16:
+            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
+            app.ctx.CHARGEPOINTS_V16[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect
+        else:
+            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
+            app.ctx.CHARGEPOINTS_V201[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect

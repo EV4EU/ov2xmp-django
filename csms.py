@@ -17,6 +17,7 @@ from asgiref.sync import sync_to_async
 from sanic import Sanic, Request, Websocket
 from sanic.log import logger
 from sanic import json
+from sanic.response import json as json_resp
 from dataclasses import asdict, is_dataclass
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +39,7 @@ if int(os.environ["OV2XMP_LOGSTASH_ENABLE"]):
     ocpp_logger.addHandler(handler)
 
 OV2XMP_OCPP_TIMEOUT = int(os.environ.get("OV2XMP_OCPP_TIMEOUT", 30))
+OV2XMP_OCPP_PREREGISTRATION_EVCS = bool(os.environ.get("OV2XMP_OCPP_PREREGISTRATION_EVCS", False))
 
 
 # json() function of Sanic compatible with dataclasses returned by the ocpp library
@@ -346,6 +348,12 @@ async def ocpp201_set_charging_profile(request: Request, chargepoint_id: str):
 async def on_connect(request: Request, websocket: Websocket, charge_point_id: str):
     # For every new charge point that connects, create a ChargePoint instance and start listening for messages.
 
+    new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
+
+    if OV2XMP_OCPP_PREREGISTRATION_EVCS and not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
+        logger.info("EV Charging Station is not pre-registered - Unauthorized: %s, from: %s", charge_point_id, request.ip)
+        return json_resp({"error": "Unauthorized"}, status=401)
+     
     logger.info("Protocols Matched: %s", websocket.subprotocol)
     logger.info("Charge Point connected: %s, from: %s", charge_point_id, request.ip)
 
@@ -353,13 +361,14 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
         cp = ChargePoint16(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)
         app.ctx.CHARGEPOINTS_V16.update({charge_point_id: cp})
         ocpp_version = OcppProtocols.ocpp16
-    else:
+    elif websocket.subprotocol == 'ocpp2.0.1':
         cp = ChargePoint201(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)
         app.ctx.CHARGEPOINTS_V201.update({charge_point_id: cp})
         ocpp_version = OcppProtocols.ocpp201
-
-    new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
-
+    else:
+        logger.error("No subprotocol defined - Aborting connection.")
+        return json_resp({"error": "Unauthorized"}, status=400)
+    
     if not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
         await ChargepointModel.objects.acreate(chargepoint_id = charge_point_id, 
                                                 ocpp_version=ocpp_version,
@@ -368,15 +377,14 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
                                                 websocket_port=request.port)
     else:
         await new_chargepoint.aupdate(connected=True, chargepoint_status=ChargePointStatus.available.value)
-
     try:
         await cp.start()
 
     except asyncio.exceptions.CancelledError:
-        logger.error("Disconnected from CP: %s", charge_point_id)
-        if cp is ChargePoint16:
+        logger.error("Disconnected from CP: %s", charge_point_id)        
+        if isinstance(cp, ChargePoint16):
             ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
             app.ctx.CHARGEPOINTS_V16[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect
-        else:
+        elif isinstance(cp, ChargePoint201):
             ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
             app.ctx.CHARGEPOINTS_V201[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect

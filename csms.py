@@ -1,4 +1,4 @@
-import os
+import os, re
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ov2xmp.settings")
 import django
 django.setup()
@@ -18,6 +18,7 @@ from sanic import Sanic, Request, Websocket
 from sanic.log import logger
 from sanic import json
 from sanic.response import json as json_resp
+from sanic.exceptions import SanicException
 from dataclasses import asdict, is_dataclass
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -344,15 +345,23 @@ async def ocpp201_set_charging_profile(request: Request, chargepoint_id: str):
 ################################## Websocket Handler ##############################################
 ###################################################################################################
 
+@app.middleware('request')
+async def evcs_validation_middleware(request: Request):
+    request_url = request.raw_url.decode()
+
+    result = re.search(r'\/ws\/ocpp\/(.*)', request_url)
+    if result:
+        charge_point_id = result.group(1)
+        new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
+
+        if OV2XMP_OCPP_PREREGISTRATION_EVCS and not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
+            logger.error("EV Charging Station is not pre-registered - Unauthorized: %s, from: %s", charge_point_id, request.ip)
+            return json('EV Charging Station is not pre-registered - Unauthorized', status=401)
+
+
 @app.websocket("/ws/ocpp/<charge_point_id:str>", subprotocols=['ocpp1.6', 'ocpp2.0.1'])
 async def on_connect(request: Request, websocket: Websocket, charge_point_id: str):
     # For every new charge point that connects, create a ChargePoint instance and start listening for messages.
-
-    new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
-
-    if OV2XMP_OCPP_PREREGISTRATION_EVCS and not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
-        logger.info("EV Charging Station is not pre-registered - Unauthorized: %s, from: %s", charge_point_id, request.ip)
-        return json_resp({"error": "Unauthorized"}, status=401)
      
     logger.info("Protocols Matched: %s", websocket.subprotocol)
     logger.info("Charge Point connected: %s, from: %s", charge_point_id, request.ip)
@@ -368,6 +377,8 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
     else:
         logger.error("No subprotocol defined - Aborting connection.")
         return json_resp({"error": "Unauthorized"}, status=400)
+    
+    new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
     
     if not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
         await ChargepointModel.objects.acreate(chargepoint_id = charge_point_id, 

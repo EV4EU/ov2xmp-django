@@ -8,6 +8,7 @@ profile_pics
 logs
 *.pdf
 *.db
+*.pcap
 
 # Backup files # 
 *.bak 

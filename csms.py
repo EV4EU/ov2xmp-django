@@ -18,7 +18,6 @@ from sanic import Sanic, Request, Websocket
 from sanic.log import logger
 from sanic import json
 from sanic.response import json as json_resp
-from sanic.exceptions import SanicException
 from dataclasses import asdict, is_dataclass
 import logging
 logging.basicConfig(level=logging.INFO)

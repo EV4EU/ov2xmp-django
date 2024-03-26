@@ -24,3 +24,4 @@ elasticsearch
 djangorestframework-simplejwt[crypto]
 django-filter
 python-logstash-async
+pytz

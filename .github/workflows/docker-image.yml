@@ -1,4 +1,4 @@
-name: OV2XMP Django Docker Image CI
+name: ov2xmp-django
 
 on:
   push:

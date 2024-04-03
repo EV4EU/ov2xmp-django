@@ -1,5 +1,8 @@
 # ov2xmp-django
 
+[![ov2xmp-django](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml/badge.svg)](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml) 
+
+
 This is the main module of the O-V2X-MP that implements all the OCPP functionalities of the platform. In summary, the module consists of the following microservices:
 
 - The CSMS service (`ov2xmp-csms`), which runs the OCPP server using the `sanic` web framework.

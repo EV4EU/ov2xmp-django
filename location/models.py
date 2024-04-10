@@ -14,3 +14,5 @@ class Location(models.Model):
     name = models.CharField(max_length=20)
     timezone = TimeZoneField(default='Europe/Athens')
     residential = models.BooleanField(default=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)

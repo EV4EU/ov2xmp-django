@@ -162,7 +162,7 @@ if int(os.environ['OV2XMP_AUTH_LDAP_ENABLE']):
 
 # === SimpleJWT Settings ===
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=int(os.environ['OV2XMP_AUTH_TOKEN_LIFETIME_DAYS'])),
 }
 
 ###########################################################################

@@ -39,7 +39,7 @@ if int(os.environ["OV2XMP_LOGSTASH_ENABLE"]):
     ocpp_logger.addHandler(handler)
 
 OV2XMP_OCPP_TIMEOUT = int(os.environ.get("OV2XMP_OCPP_TIMEOUT", 30))
-OV2XMP_OCPP_PREREGISTRATION_EVCS = bool(os.environ.get("OV2XMP_OCPP_PREREGISTRATION_EVCS", False))
+OV2XMP_OCPP_PREREGISTRATION_EVCS = bool(int(os.environ.get("OV2XMP_OCPP_PREREGISTRATION_EVCS", 0)))
 
 
 # json() function of Sanic compatible with dataclasses returned by the ocpp library

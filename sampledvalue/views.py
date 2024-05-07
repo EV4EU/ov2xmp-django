@@ -11,5 +11,8 @@ class SampledvalueDetailApiView(ListAPIView):
     lookup_url_kwarg = 'transaction_id'
 
     def get_queryset(self):
-        transaction_id = self.kwargs["transaction_id"]   
-        return Sampledvalue.objects.filter(transaction__transaction_id=transaction_id)
+        try:
+            transaction_id = self.kwargs["transaction_id"]   
+            return Sampledvalue.objects.filter(transaction__transaction_id=transaction_id)
+        except:
+            return Sampledvalue.objects.none()

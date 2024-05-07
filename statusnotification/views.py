@@ -16,5 +16,8 @@ class StatusnotificationDetailApiView(ListAPIView):
     lookup_url_kwarg = 'chargepoint_id'
 
     def get_queryset(self):
-        chargepoint_id = self.kwargs["chargepoint_id"]   
-        return Statusnotification.objects.filter(chargepoint__chargepoint_id=chargepoint_id)
+        try:
+            chargepoint_id = self.kwargs["chargepoint_id"]   
+            return Statusnotification.objects.filter(chargepoint__chargepoint_id=chargepoint_id)
+        except:
+            return Statusnotification.objects.none()

@@ -15,7 +15,7 @@ from sampledvalue.models import Sampledvalue as SampledvalueModel
 
 import uuid
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from channels.layers import get_channel_layer
 from django.db import DatabaseError
@@ -36,7 +36,7 @@ def authorize_idTag(id_token):
             idTag_object = idTagModel.objects.get(idToken=id_token)
             if not idTag_object.revoked:
                 if idTag_object.expiry_date is not None:
-                    if idTag_object.expiry_date.timestamp() > datetime.utcnow().timestamp():
+                    if idTag_object.expiry_date.timestamp() > datetime.now(timezone.utc).timestamp():
                         return {"status": ocpp_v16_enums.AuthorizationStatus.accepted.value}
                     else:
                         return {"status": ocpp_v16_enums.AuthorizationStatus.expired.value}
@@ -70,7 +70,7 @@ class ChargePoint16(cp):
         ) 
 
         return call_result.BootNotificationPayload(
-            current_time=datetime.utcnow().isoformat(),
+            current_time=datetime.now(timezone.utc).isoformat(),
             interval=10,
             status=ocpp_v16_enums.RegistrationStatus.accepted,
         )
@@ -79,12 +79,11 @@ class ChargePoint16(cp):
     @on(ocpp_v16_enums.Action.Heartbeat)
     def on_heartbeat(self):
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
-        current_cp.last_heartbeat = timezone.now()
+        current_cp.last_heartbeat = datetime.now(timezone.utc)
         current_cp.save()
 
         return call_result.HeartbeatPayload(
-            current_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") + "Z"
-            #current_time=datetime.utcnow().isoformat()
+            current_time=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z"
         )
 
 
@@ -113,8 +112,8 @@ class ChargePoint16(cp):
             chargepoint = current_cp,
             error_code = error_code,
             info = kwargs.get('info', None),
-            status = status,
-            timestamp = kwargs.get('timestamp', timezone.now()),
+            status_reported = status,
+            timestamp = kwargs.get('timestamp', datetime.now(timezone.utc)),
             vendor_id = kwargs.get('vendor_id', None),
             vendor_error_code = kwargs.get('vendor_error_code', None)
         )
@@ -152,21 +151,18 @@ class ChargePoint16(cp):
             reservation_id = kwargs.get('reservation_id', None)
             if reservation_id is not None:
                 ReservationModel.objects.filter(connector__chargepoint__chargepoint_id = self.id, reservation_id=reservation_id).delete()
-            new_transaction.status = TransactionStatus.started
+            new_transaction.transaction_status = TransactionStatus.started
         else:
-            new_transaction.stop_transaction_timestamp = timezone.now()
+            new_transaction.stop_transaction_timestamp = datetime.now(timezone.utc)
             new_transaction.wh_meter_stop = meter_start
             new_transaction.reason_stopped = TransactionStatus.unauthorized
-            new_transaction.status = TransactionStatus.unauthorized
+            new_transaction.transaction_status = TransactionStatus.unauthorized
         
         new_transaction.save()
         
         return call_result.StartTransactionPayload(
             transaction_id = new_transaction.transaction_id,
             id_tag_info = ocpp_v16_datatypes.IdTagInfo(status=result["status"])
-            #{
-            #    "status": result["status"]
-            #}
         )
 
 
@@ -218,7 +214,7 @@ class ChargePoint16(cp):
 
             current_transaction.stop_transaction_timestamp = timestamp
             current_transaction.wh_meter_stop = meter_stop
-            current_transaction.status = TransactionStatus.finished
+            current_transaction.transaction_status = TransactionStatus.finished
             reason = kwargs.get('reason', None)
             if reason is not None:
                 current_transaction.reason_stopped = reason

@@ -21,4 +21,4 @@ class Transaction(models.Model):
     wh_meter_last_timestamp = models.DateTimeField()
     id_tag = models.ForeignKey(IdTag, on_delete=models.SET_NULL, null=True, default=None)
     reason_stopped = models.CharField(max_length=50, null=True)
-    status = models.CharField(max_length=15, choices=TransactionStatus.choices, default=TransactionStatus.started)
+    transaction_status = models.CharField(max_length=15, choices=TransactionStatus.choices, default=TransactionStatus.started)

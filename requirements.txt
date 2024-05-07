@@ -25,3 +25,5 @@ djangorestframework-simplejwt[crypto]
 django-filter
 python-logstash-async
 pytz
+django-credit-cards
+django-seriously

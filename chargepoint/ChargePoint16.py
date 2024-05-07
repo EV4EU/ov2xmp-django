@@ -2,6 +2,7 @@ from ocpp.routing import on
 from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result, call
 import ocpp.v16.enums as ocpp_v16_enums
+from ocpp.v16 import datatypes as ocpp_v16_datatypes
 
 from chargepoint.models import Chargepoint as ChargepointModel
 from idtag.models import IdTag as idTagModel
@@ -162,9 +163,10 @@ class ChargePoint16(cp):
         
         return call_result.StartTransactionPayload(
             transaction_id = new_transaction.transaction_id,
-            id_tag_info = {
-                "status": result["status"]
-            }
+            id_tag_info = ocpp_v16_datatypes.IdTagInfo(status=result["status"])
+            #{
+            #    "status": result["status"]
+            #}
         )
 
 

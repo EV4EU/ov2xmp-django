@@ -2,6 +2,7 @@ from django.db import models
 from ocpp.v16 import enums as enums_v16
 from django.utils.translation import gettext_lazy
 from location.models import Location
+from django.contrib.postgres.fields import ArrayField
 
 
 class OcppProtocols(models.TextChoices):
@@ -12,6 +13,17 @@ class ChargepointType(models.TextChoices):
     ac = "AC"
     dc = "DC"
     hpdc = "HPDC"
+
+class ChargepointSocket(models.TextChoices):
+    acType1 = "AC Type 1"
+    acType2 = "AC Type 2"
+    chademo = "CHAdeMO"
+    ccs = "CCS"
+    dcType2 = "DC Type 2"
+
+def get_chargepointsocket_default():
+    return [ChargepointSocket.acType2]
+
 
 # Create your models here.
 class Chargepoint(models.Model):
@@ -35,3 +47,4 @@ class Chargepoint(models.Model):
     last_heartbeat = models.DateTimeField(null=True)
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, default=None)
     chargepoint_type = models.CharField(max_length=4, choices=ChargepointType.choices, default=ChargepointType.ac)
+    charging_sockets = ArrayField(models.CharField(max_length=10, choices=ChargepointSocket.choices), default=get_chargepointsocket_default)

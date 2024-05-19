@@ -22,10 +22,5 @@ class Migration(migrations.Migration):
             model_name='profile',
             name='cc_number',
             field=creditcards.models.CardNumberField(max_length=25, null=True),
-        ),
-        migrations.AddField(
-            model_name='profile',
-            name='chargepoint_sockets',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(choices=[('AC Type 1', 'Actype1'), ('AC Type 2', 'Actype2'), ('CHAdeMO', 'Chademo'), ('CCS', 'Ccs'), ('DC Type 2', 'Dctype2')], max_length=10), default=chargepoint.models.get_chargepointsocket_default, size=None),
-        ),
+        )
     ]

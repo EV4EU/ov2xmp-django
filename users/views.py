@@ -6,134 +6,81 @@ from .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, CreateAPIView
+from .models import User, Profile
+from .serializers import UserProfileSerializer, UserSerializer, UserSignupSerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.request import Request
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+from django_filters.rest_framework import FilterSet, CharFilter
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
+from users.serializers import MyTokenObtainPairSerializer
 
 
-def forgot_password(request):
-    context = {}
-    return render(request, 'users/password-reset.html', context)
+'''
+class ProfileFilter(FilterSet):
+    chargepoint_id = CharFilter(field_name='connector__chargepoint__chargepoint_id')
+    username = CharFilter(field_name='id_tag__user__username')
+    id_token = CharFilter(field_name='id_tag__idToken')
+    status = CharFilter(field_name='status')
 
+    class Meta:
+        model = Profile
+        fields = []
+'''
 
-@login_required
-def manage_users(request):
-    if request.user.is_superuser:
-        return render(request, 'users/manage-users.html', {'title': 'Users'})
-    else:
-        raise PermissionDenied
+class UserCreateApiView(CreateAPIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = UserSignupSerializer
+    queryset = User.objects.all()
 
+    def post(self, request):
+        data = request.data
+        serializer = self.serializer_class(data=data)
 
-@login_required
-def add_user(request):
-    if request.user.is_superuser:
-        if request.method == 'POST':
-            form = UserRegisterForm(request.POST)
-            if form.is_valid():
-                form.save()
-                username = form.cleaned_data.get('username')
-                messages.success(request, f'Account created for {username}')
-                return redirect('home')
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         else:
-            form = UserRegisterForm()
-        title = "Create New User"
-        return render(request, 'users/add-user.html', {'form': form, 'title': title})
-    else:
-        raise PermissionDenied
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@login_required
-def get_users(request):
-    response = {"data": []}
-    for user in User.objects.all():
-        response['data'].append({
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'superuser': user.is_superuser,
-            'email': user.email,
-        })
-    return JsonResponse(response, safe=False)
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
+class UserApiView(ListAPIView):
+    authentication_classes = [JWTAuthentication]
+    serializer_class = UserProfileSerializer
+    queryset = Profile.objects.all()
+    #filterset_class = ProfileFilter
 
-
-@login_required
-def delete_user(request):
-    if request.user.is_superuser:
-        global user
-        splitted_url = request.get_full_path().split('/')
-        if len(splitted_url) > 3:
-            username = splitted_url[3]
-            if username != '':
-                user = User.objects.get(username=username)
-            else:
-                return HttpResponse(status=400)
+    def get(self, request):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
         else:
-            return HttpResponse(status=400)
-
-        user.delete()
-        return render(request, 'users/manage-users.html', {'title': 'Users'})
-    else:
-        raise PermissionDenied
+            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
 
-@login_required
-def edit_user(request):
-    
-    splitted_url = request.get_full_path().split('/')
-    if len(splitted_url) > 3:           # Determine if a user has been specified in the URL
-        username = splitted_url[3]      
-        if username != '':
-            edited_user = User.objects.get(username=username)  # If yes, then we are going to change their attributes
-        else:
-            edited_user = request.user  # if no user is specified, then we take the signed in user
-            username = request.user.username
-    else:
-        edited_user = request.user
-        username = request.user.username
-    # if the logged-in user has specified a user in the URL, but they do not have the appropriate rights, raise error
-    if request.user.username != edited_user.username and not request.user.is_superuser:
-        raise PermissionDenied
+class UserDetailApiView(RetrieveUpdateDestroyAPIView):
+    authentication_classes = [JWTAuthentication]
+    serializer_class = UserProfileSerializer
+    queryset = Profile.objects.all()
+    lookup_url_kwarg = 'username'
+    lookup_field  = "user__username"
 
-    if request.method == 'POST':        
-        # Update profile
-        if 'password' not in request.POST:
-            u_form = UserUpdateForm(request.POST, instance=edited_user)
-            p_form = ProfileUpdateForm(request.POST,
-                                       request.FILES,
-                                       instance=edited_user.profile)
-            if u_form.is_valid() and p_form.is_valid():
-                u_form.save()
-                p_form.save()
-                if username != request.user.username:
-                    messages.success(request, f'The account ' + username + ' has been updated')
-                    return redirect('users-manage')
-                else:
-                    messages.success(request, f'Your account has been updated')
-                    return redirect('users-edit')
-            else:
-                raise PermissionDenied
-        
-        # Update password
-        else:
-            pass_form = PasswordChangeForm(edited_user, request.POST)
-            if pass_form.is_valid():
-                pass_form.save()
-            if username != request.user.username:
-                messages.success(request, f'The password for user ' + username + ' has been updated')
-                return redirect('users-manage')
-            else:
-                messages.success(request, f'Your password has been updated')
-                return redirect('users-edit')
-    else:
-        u_form = UserUpdateForm(instance=edited_user)
-        p_form = ProfileUpdateForm(instance=edited_user.profile)
-        pass_form = PasswordChangeForm(edited_user)
 
-        title = 'Profile Info'
-
-        context = {
-            'u_form': u_form,
-            'p_form': p_form,
-            'pass_form': pass_form,
-            'title': title,
-            'custom_user': edited_user
-        }
-
-        return render(request, 'users/edit-user.html', context)
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer

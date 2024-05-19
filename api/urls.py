@@ -4,12 +4,14 @@ from connector.views import ConnectorApiView, ConnectorDetailApiView
 from chargingprofile.views import ChargingprofileApiView, ChargingprofileDetailApiView
 from idtag.views import IdtagApiView, IdtagDetailApiView
 from tasks.views import TasksApiView, TasksDetailApiView
-from api.views import *
+from ocpp_rest.views import *
 from location.views import LocationApiView, LocationDetailApiView
 from reservation.views import ReservationApiView, ReservationDetailApiView
 from statusnotification.views import StatusnotificationDetailApiView
 from transaction.views import TransactionApiView, TransactionDetailApiView
 from sampledvalue.views import SampledvalueDetailApiView
+from users.views import UserApiView, UserDetailApiView, UserCreateApiView, MyTokenObtainPairView #, UserProfileDetailApiView
+from ocpi.views import TariffApiView, TariffDetailApiView, TariffElementApiView, TariffElementDetailApiView, CdrApiView, CdrDetailApiView
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -25,7 +27,7 @@ urlpatterns = [
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('redoc/', SpectacularRedocView.as_view(), name='redoc'),
 
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
@@ -33,10 +35,14 @@ urlpatterns = [
     path('chargepoint/<str:chargepoint_id>/', ChargepointDetailApiView.as_view()),
 
     path('connector/', ConnectorApiView.as_view()),
-    path('connector/<str:chargepoint_id>/', ConnectorDetailApiView.as_view()),
+    path('connector/<str:uuid>/', ConnectorDetailApiView.as_view()),
 
     path('chargingprofile/', ChargingprofileApiView.as_view()),
     path('chargingprofile/<str:chargingprofile_id>/', ChargingprofileDetailApiView.as_view()),
+
+    path('user/create/', UserCreateApiView.as_view()),
+    path('user/', UserApiView.as_view()),
+    path('user/<str:username>/', UserDetailApiView.as_view()),
 
     path('idtag/', IdtagApiView.as_view()),
     path('idtag/<str:id_token>/', IdtagDetailApiView.as_view()),
@@ -52,6 +58,14 @@ urlpatterns = [
 
     path('transaction/', TransactionApiView.as_view()),
     path('transaction/<int:transaction_id>/', TransactionDetailApiView.as_view()),
+
+    path('tariff/', TariffApiView.as_view()),
+    path('tariff/<str:id>/', TariffDetailApiView.as_view()),
+    path('tariffelement/', TariffElementApiView.as_view()),
+    path('tariffelement/<int:id>/', TariffElementDetailApiView.as_view()),
+
+    path('cdr/', CdrApiView.as_view()),
+    path('cdr/<str:id>/', CdrDetailApiView.as_view()),
 
     path('sampledvalue/<str:transaction_id>/', SampledvalueDetailApiView.as_view()),
 

@@ -1,10 +1,22 @@
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
 from .models import Connector
 from .serializers import ConnectorSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication  
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from django_filters.rest_framework import FilterSet, CharFilter
+
+
+class ConnectorFilter(FilterSet):
+    chargepoint_id = CharFilter(field_name='chargepoint__chargepoint_id')
+    availability_status = CharFilter(field_name='availability_status')
+    connector_status = CharFilter(field_name='connector_status')
+
+    class Meta:
+        model = Connector
+        fields = []
+
 
 
 @extend_schema_view(
@@ -18,6 +30,7 @@ class ConnectorApiView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = ConnectorSerializer
     queryset = Connector.objects.all()
+    filterset_class = ConnectorFilter
     
     def get(self, request):
         fields = request.GET.get('fields', None)
@@ -30,14 +43,8 @@ class ConnectorApiView(ListAPIView):
             return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
 
-class ConnectorDetailApiView(RetrieveAPIView):
+class ConnectorDetailApiView(RetrieveUpdateAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = ConnectorSerializer
-    lookup_url_kwarg = 'chargepoint_id'
-
-    def get_queryset(self):
-        try:
-            chargepoint_id = self.kwargs["chargepoint_id"]
-            return Connector.objects.filter(chargepoint__chargepoint_id=chargepoint_id)
-        except:
-            return Connector.objects.none()
+    lookup_url_kwarg = 'uuid'
+    queryset = Connector.objects.all()

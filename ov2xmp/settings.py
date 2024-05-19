@@ -14,6 +14,10 @@ from pathlib import Path
 import os
 from django.contrib.messages import constants as messages
 from datetime import timedelta
+from ocpp.v16 import enums as enums_v16
+from zoneinfo import available_timezones
+from enum import Enum
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,6 +71,8 @@ INSTALLED_APPS = [
     'location',
     'statusnotification',
     'sampledvalue',
+    'ocpi',
+    'ocpp_rest',
 
     'api',
     'rest_framework_simplejwt',
@@ -163,6 +169,7 @@ if int(os.environ['OV2XMP_AUTH_LDAP_ENABLE']):
 # === SimpleJWT Settings ===
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=int(os.environ['OV2XMP_AUTH_TOKEN_LIFETIME_DAYS'])),
+    "TOKEN_OBTAIN_SERIALIZER": "users.serializers.MyTokenObtainPairSerializer",
 }
 
 ###########################################################################
@@ -301,6 +308,14 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'The Open V2X Management Platform of the EV4EU project.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'ENUM_NAME_OVERRIDES': {
+        'AvailabilityTypeEnum': [(i.value, i.value) for i in enums_v16.AvailabilityType], # type: ignore
+        'ChargingProfilePurposeTypeEnum': [(i.value, i.value) for i in enums_v16.ChargingProfilePurposeType], # type: ignore
+        'ChargingRateUnitTypeEnum': [(i.value, i.value) for i in enums_v16.ChargingRateUnitType], # type: ignore
+        'TimezoneEnum': [(i, i) for i in available_timezones()],
+        'StatusReportedEnum': [(i.value, i.value) for i in enums_v16.ChargePointStatus],
+        'ChargepointSocketsEnum': 'connector.models.ConnectorType.choices'
+    }
     # OTHER SETTINGS
 }
 

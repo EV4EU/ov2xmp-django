@@ -22,15 +22,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('', include('dashboard.urls')),
     path('admin/', admin.site.urls),
-    path('api-auth/', include('rest_framework.urls')),
-    path('idtag/', include("idtag.urls")),
-    path('chargepoint/', include("chargepoint.urls")),
-
-    path("accounts/", include("django.contrib.auth.urls")),
-
+    path('api-auth/', include('rest_framework.urls', namespace="rest_framework")),
     path('api/', include('api.urls')),
-    
-    path('users/', include('users.urls')),
     path('oidc/', include('oauth2_authcodeflow.urls')),
 ]    
 
@@ -38,15 +31,3 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-
-'''
-accounts/login/ [name='login']
-accounts/logout/ [name='logout']
-accounts/password_change/ [name='password_change']
-accounts/password_change/done/ [name='password_change_done']
-accounts/password_reset/ [name='password_reset']
-accounts/password_reset/done/ [name='password_reset_done']
-accounts/reset/<uidb64>/<token>/ [name='password_reset_confirm']
-accounts/reset/done/ [name='password_reset_complete']
-'''

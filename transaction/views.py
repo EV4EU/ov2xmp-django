@@ -12,7 +12,7 @@ class TransactionFilter(FilterSet):
     chargepoint_id = CharFilter(field_name='connector__chargepoint__chargepoint_id')
     username = CharFilter(field_name='id_tag__user__username')
     id_token = CharFilter(field_name='id_tag__idToken')
-    status = CharFilter(field_name='status')
+    transaction_status = CharFilter(field_name='transaction_status')
 
     class Meta:
         model = Transaction

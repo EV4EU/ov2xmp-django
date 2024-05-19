@@ -354,8 +354,8 @@ async def evcs_validation_middleware(request: Request):
         new_chargepoint = await sync_to_async(ChargepointModel.objects.filter, thread_sensitive=True)(pk=charge_point_id)
 
         if OV2XMP_OCPP_PREREGISTRATION_EVCS and not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
-            logger.error("EV Charging Station is not pre-registered - Unauthorized: %s, from: %s", charge_point_id, request.ip)
-            return json('EV Charging Station is not pre-registered - Unauthorized', status=401)
+            logger.error("EV Charging Station not found: %s, from: %s", charge_point_id, request.ip)
+            return json('EV Charging Station not found', status=404)
 
 
 @app.websocket("/ws/ocpp/<charge_point_id:str>", subprotocols=['ocpp1.6', 'ocpp2.0.1'])
@@ -382,19 +382,19 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
     if not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
         await ChargepointModel.objects.acreate(chargepoint_id = charge_point_id, 
                                                 ocpp_version=ocpp_version,
-                                                chargepoint_status=ChargePointStatus.available.value,
+                                                chargepoint_status=ChargePointStatus.available.value,  # type: ignore
                                                 ip_address=request.ip,
                                                 websocket_port=request.port)
     else:
-        await new_chargepoint.aupdate(connected=True, chargepoint_status=ChargePointStatus.available.value)
+        await new_chargepoint.aupdate(connected=True, chargepoint_status=ChargePointStatus.available.value) # type: ignore
     try:
         await cp.start()
 
     except asyncio.exceptions.CancelledError:
         logger.error("Disconnected from CP: %s", charge_point_id)        
         if isinstance(cp, ChargePoint16):
-            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
+            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value) # type: ignore
             app.ctx.CHARGEPOINTS_V16[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect
         elif isinstance(cp, ChargePoint201):
-            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
+            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value) # type: ignore
             app.ctx.CHARGEPOINTS_V201[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect

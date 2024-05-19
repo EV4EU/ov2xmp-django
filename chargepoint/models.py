@@ -9,21 +9,6 @@ class OcppProtocols(models.TextChoices):
     ocpp16 = "ocpp16", gettext_lazy("ocpp1.6")
     ocpp201 = "ocpp201", gettext_lazy("ocpp2.0.1")
 
-class ChargepointType(models.TextChoices):
-    ac = "AC"
-    dc = "DC"
-    hpdc = "HPDC"
-
-class ChargepointSocket(models.TextChoices):
-    acType1 = "AC Type 1"
-    acType2 = "AC Type 2"
-    chademo = "CHAdeMO"
-    ccs = "CCS"
-    dcType2 = "DC Type 2"
-
-def get_chargepointsocket_default():
-    return [ChargepointSocket.acType2]
-
 
 # Create your models here.
 class Chargepoint(models.Model):
@@ -46,5 +31,3 @@ class Chargepoint(models.Model):
     ocpp_version = models.CharField(max_length=9, choices=OcppProtocols.choices)
     last_heartbeat = models.DateTimeField(null=True)
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, default=None)
-    chargepoint_type = models.CharField(max_length=4, choices=ChargepointType.choices, default=ChargepointType.ac)
-    charging_sockets = ArrayField(models.CharField(max_length=10, choices=ChargepointSocket.choices), default=get_chargepointsocket_default)

@@ -2,12 +2,20 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from .models import Chargepoint
 from .serializers import ChargepointSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication  
-from rest_framework_simplejwt.backends import TokenBackend
 from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import FilterSet, CharFilter
+
+
+class ChargepointFilter(FilterSet):
+    chargepoint_status = CharFilter(field_name='chargepoint_status')
+
+    class Meta:
+        model = Chargepoint
+        fields = []
+
 
 @extend_schema_view(
     get=extend_schema(
@@ -20,6 +28,7 @@ class ChargepointApiView(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = ChargepointSerializer
     queryset = Chargepoint.objects.all()
+    filterset_class = ChargepointFilter
 
     def get(self, request):
         fields = request.GET.get('fields', None)

@@ -9,19 +9,61 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from ocpi.models import TariffElement, Tariff, Cdr
 
 
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
 class TariffElementApiView(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = TariffElementSerializer
     queryset = TariffElement.objects.all()
 
+    def get(self, request):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
+        else:
+            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
+
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
 class TariffElementDetailApiView(RetrieveUpdateDestroyAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = TariffElementSerializer
     lookup_url_kwarg = 'id'
     queryset = TariffElement.objects.all()
 
+    def get(self, request, id):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        filtered_queryset = filtered_queryset.filter(id=id)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
+        else:
+            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data[0] )
 
+
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
 class TariffApiView(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     model = Tariff
@@ -32,7 +74,24 @@ class TariffApiView(ListCreateAPIView):
             return TariffSerializerWriteOnly
         return TariffSerializerReadOnly
 
+    def get(self, request):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
+        else:
+            return Response(data= TariffSerializerReadOnly(filtered_queryset.all(), many=True).data )
 
+
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
 class TariffDetailApiView(RetrieveUpdateDestroyAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = TariffSerializerWriteOnly
@@ -44,15 +103,52 @@ class TariffDetailApiView(RetrieveUpdateDestroyAPIView):
             return TariffSerializerReadOnly
         return TariffSerializerWriteOnly
 
+    def get(self, request, id):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        filtered_queryset = filtered_queryset.filter(id=id)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
+        else:
+            return Response(data= TariffSerializerReadOnly(filtered_queryset.all(), many=True).data[0] )
 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
 class CdrApiView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = CdrSerializer
     queryset = Cdr.objects.all()
 
 
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
+        ]
+    )
+)
 class CdrDetailApiView(RetrieveDestroyAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = CdrSerializer
     lookup_url_kwarg = 'id'
     queryset = Cdr.objects.all()
+
+    def get(self, request, id):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        filtered_queryset = filtered_queryset.filter(id=id)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
+        else:
+            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data[0] )

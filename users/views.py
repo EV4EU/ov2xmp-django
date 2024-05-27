@@ -21,17 +21,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from users.serializers import MyTokenObtainPairSerializer
 
 
-'''
 class ProfileFilter(FilterSet):
-    chargepoint_id = CharFilter(field_name='connector__chargepoint__chargepoint_id')
-    username = CharFilter(field_name='id_tag__user__username')
-    id_token = CharFilter(field_name='id_tag__idToken')
-    status = CharFilter(field_name='status')
+    username = CharFilter(field_name='user__username')
 
     class Meta:
         model = Profile
         fields = []
-'''
+
 
 class UserCreateApiView(CreateAPIView):
     authentication_classes = []
@@ -61,7 +57,7 @@ class UserApiView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = UserProfileSerializer
     queryset = Profile.objects.all()
-    #filterset_class = ProfileFilter
+    filterset_class = ProfileFilter
 
     def get(self, request):
         fields = request.GET.get('fields', None)

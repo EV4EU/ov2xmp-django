@@ -36,3 +36,4 @@ class Location(models.Model):
     parking_type = models.CharField(choices=ParkingType.choices, max_length=20)
     last_updated = models.DateTimeField(auto_now=True)
     time_zone = TimeZoneField(default='Europe/Athens')
+    substation_id = models.CharField(max_length=100, null=True, blank=True)

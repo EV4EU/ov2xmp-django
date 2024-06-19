@@ -31,9 +31,9 @@ class Connector(models.Model):
     connector_status = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargePointStatus], default=enums_v16.ChargePointStatus.available.value, max_length=13)
     chargepoint = models.ForeignKey(Chargepoint, on_delete=models.CASCADE)
 
-    standard = models.CharField(max_length=255, choices=ConnectorType.choices)
-    format = models.CharField(max_length=10, choices=ConnectorFormat.choices)
-    power_type = models.CharField(max_length=20, choices=PowerType.choices)
+    standard = models.CharField(max_length=255, choices=ConnectorType.choices, null=True, default=None, blank=True)
+    format = models.CharField(max_length=10, choices=ConnectorFormat.choices, null=True, default=None, blank=True)
+    power_type = models.CharField(max_length=20, choices=PowerType.choices, null=True, default=None, blank=True)
 
     # max_voltage, max_amperage, max_electric_power are ommited
 

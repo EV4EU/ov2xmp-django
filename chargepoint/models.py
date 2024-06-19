@@ -20,14 +20,14 @@ class Chargepoint(models.Model):
     chargepoint_serial_number = models.CharField(max_length=25, blank=True, null=True)
     firmware_version = models.CharField(max_length=50, blank=True, null=True)
 
-    ip_address = models.CharField(max_length=15)
-    websocket_port = models.IntegerField()
+    ip_address = models.CharField(max_length=15, null=True, default=None, blank=True)
+    websocket_port = models.IntegerField(null=True, default=None, blank=True)
 
-    connected = models.BooleanField(default=True)
+    connected = models.BooleanField(default=False)
     chargepoint_status = models.CharField(choices=[(enums_v16.ChargePointStatus.available.value, enums_v16.ChargePointStatus.available.value), 
                                                    (enums_v16.ChargePointStatus.unavailable.value, enums_v16.ChargePointStatus.unavailable.value),
                                                    (enums_v16.ChargePointStatus.faulted.value, enums_v16.ChargePointStatus.faulted.value)], default=enums_v16.ChargePointStatus.available.value, max_length=11)
     
     ocpp_version = models.CharField(max_length=9, choices=OcppProtocols.choices)
-    last_heartbeat = models.DateTimeField(null=True)
+    last_heartbeat = models.DateTimeField(null=True, default=None, blank=True)
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, default=None)

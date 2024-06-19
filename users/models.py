@@ -14,6 +14,7 @@ class Profile(models.Model):
     chargepoint_sockets = ArrayField(models.CharField(max_length=21, choices=ConnectorType.choices, null=True), default=list, blank=True)
     cc_number = CardNumberField(null=True, blank=True)
     cc_expirydate = CardExpiryField(null=True, blank=True)
+    tariff_preference = models.FloatField(null=True, default=None, blank=True)
 
 
     def __str__(self):

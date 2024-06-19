@@ -1,6 +1,8 @@
 from django.db import models
 from idtag.models import IdTag
 from uuid import uuid4
+from chargingprofile.models import Chargingprofile
+from connector.models import Connector
 
 
 class TransactionStatus(models.TextChoices):
@@ -13,7 +15,7 @@ class TransactionStatus(models.TextChoices):
 class Transaction(models.Model):
     transaction_id = models.AutoField(primary_key=True)
     uuid = models.UUIDField(default=uuid4, editable=False)
-    connector = models.ForeignKey(to='connector.Connector', on_delete=models.SET_NULL, default=None, null=True)
+    connector = models.ForeignKey(Connector, on_delete=models.SET_NULL, default=None, null=True)
     start_transaction_timestamp = models.DateTimeField()
     stop_transaction_timestamp = models.DateTimeField(null=True)
     wh_meter_start = models.FloatField()
@@ -23,3 +25,4 @@ class Transaction(models.Model):
     id_tag = models.ForeignKey(IdTag, on_delete=models.SET_NULL, null=True, default=None)
     reason_stopped = models.CharField(max_length=50, null=True)
     transaction_status = models.CharField(max_length=15, choices=TransactionStatus.choices, default=TransactionStatus.started)
+    chargingprofile = models.ForeignKey(Chargingprofile, on_delete=models.SET_NULL, null=True, default=None, blank=True)

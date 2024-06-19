@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
 
     'django_celery_results',
 
@@ -73,6 +74,7 @@ INSTALLED_APPS = [
     'sampledvalue',
     'ocpi',
     'ocpp_rest',
+    'dso_rest',
 
     'api',
     'rest_framework_simplejwt',

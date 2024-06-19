@@ -5,6 +5,8 @@ from django.contrib.postgres.fields import ArrayField
 from ov2xmp.validators import JSONSchemaValidator
 from ocpi.classes import PriceComponent, TariffType, TariffRestrictions, Price, AuthMethod, CdrDimension
 from uuid import uuid4
+from idtag.models import IdTag
+from location.models import Location
 
 
 OV2XMP_OCPI_COUNTRYCODE = os.environ.get("OV2XMP_OCPI_COUNTRYCODE", "GR")
@@ -19,11 +21,10 @@ class TariffElement(models.Model):
             validators=[JSONSchemaValidator(limit_value=PriceComponent.schema())]
             ))
     
-    restrictions = ArrayField(
-        base_field=models.JSONField(
-            default=dict,
-            validators=[JSONSchemaValidator(limit_value=TariffRestrictions.schema())]
-        ), default=list, blank=True)
+    restrictions = models.JSONField(
+        default=dict,
+        validators=[JSONSchemaValidator(limit_value=TariffRestrictions.schema())]
+    )
 
 
 # Create your models here.
@@ -63,13 +64,12 @@ class Cdr(models.Model):
     start_date_time = models.DateTimeField()
     end_date_time = models.DateTimeField()
     session_id = models.ForeignKey(to='transaction.Transaction', on_delete=models.SET_NULL, null=True)
-    # The cdr_token must be filled by the serializer, by traversing through session_id__id_tag__idToken
+    cdr_token = models.ForeignKey(IdTag, on_delete=models.SET_NULL, null=True)   # The cdr_token must be filled by traversing through session_id__id_tag__idToken
     auth_method = models.CharField(max_length=15, choices=AuthMethod.choices)
     authorization_reference = models.CharField(max_length=36, null=True, blank=True)
-    # The cdr_location must be filled by the serializer, by traversing through session_id__connector__chargepoint__location
+    cdr_location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True) # The cdr_location must be filled by traversing through session_id__connector__chargepoint__location
     meter_id = models.CharField(max_length=3, null=True, blank=True)
-    # The relevant Tariff objects must be chosen dynamically by the backend
-    tariffs = models.ManyToManyField(Tariff)
+    tariffs = models.ManyToManyField(Tariff)   # The relevant Tariff objects must be chosen dynamically by the backend
     charging_periods = models.ManyToManyField(ChargingPeriod)
     # signed_data is ommitted
     total_cost = models.JSONField(

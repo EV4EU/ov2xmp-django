@@ -1,5 +1,4 @@
 from django.db import models
-from transaction.models import Transaction
 from ocpp.v16 import enums as enums_v16
 from django.contrib.postgres.fields import ArrayField
 from uuid import uuid4
@@ -11,7 +10,7 @@ from chargingprofile.classes import ChargingSchedulePeriod
 class Chargingprofile(models.Model):
     #uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     chargingprofile_id = models.AutoField(primary_key=True)
-    transaction_id = models.ForeignKey(Transaction, on_delete=models.SET_NULL, default=None, null=True, blank=True)
+    #transaction_id = models.ForeignKey(Transaction, on_delete=models.SET_NULL, default=None, null=True, blank=True)
     stack_level = models.IntegerField()
     chargingprofile_purpose = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargingProfilePurposeType], default=enums_v16.ChargingProfilePurposeType.charge_point_max_profile.value, max_length=21)
     chargingprofile_kind = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargingProfileKindType], default=enums_v16.ChargingProfileKindType.absolute.value, max_length=10)

@@ -3,6 +3,7 @@ from connector.models import Connector
 from chargepoint.models import Chargepoint
 from ocpp.v16 import enums as enums_v16 #ChargePointErrorCode
 from uuid import uuid4
+from django.utils.timezone import now
 
 
 # Create your models here.
@@ -13,6 +14,6 @@ class Statusnotification(models.Model):
     error_code = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargePointErrorCode], max_length=50)
     info = models.CharField(max_length=50, blank=True, null=True, default='')
     status_reported = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargePointStatus], max_length=50)
-    timestamp = models.DateTimeField(blank=True, null=True, default=None)
+    timestamp = models.DateTimeField(default=now)
     vendor_id = models.CharField(max_length=255, blank=True, null=True, default='')
     vendor_error_code = models.CharField(max_length=50, blank=True, null=True, default='')

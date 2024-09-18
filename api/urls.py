@@ -12,6 +12,8 @@ from transaction.views import TransactionApiView, TransactionDetailApiView
 from sampledvalue.views import SampledvalueDetailApiView
 from users.views import UserApiView, UserDetailApiView, UserCreateApiView, MyTokenObtainPairView #, UserProfileDetailApiView
 from ocpi.views import TariffApiView, TariffDetailApiView, TariffElementApiView, TariffElementDetailApiView, CdrApiView, CdrDetailApiView
+from dso_rest.views import DSOSignalApiView
+
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
@@ -89,4 +91,6 @@ urlpatterns = [
     path('ocpp16/triggermessage/', Ocpp16TriggerMessageApiView.as_view()),
     path('ocpp16/getlocallistversion/', Ocpp16GetLocalListVersionApiView.as_view()),
     path('ocpp16/sendlocallist/', Ocpp16SendLocalListApiView.as_view()),
+
+    path('dso/signal/', DSOSignalApiView.as_view()),
 ]

@@ -1,11 +1,8 @@
 from drf_spectacular.extensions import OpenApiSerializerFieldExtension
-from drf_spectacular.plumbing import follow_field_source, build_basic_type
-from drf_spectacular.types import OpenApiTypes
-from pydantic.main import BaseModel
 from ocpi.classes import PriceComponent, TariffRestrictions, Price, DisplayText, ManyToManyWriteOnlyField
 from chargingprofile.classes import ChargingSchedulePeriod
-from rest_framework.fields import JSONField
 from location.classes import GeoLocation
+from dso_rest.classes import Period
 
 
 class PriceComponentFieldExtension(OpenApiSerializerFieldExtension):
@@ -48,3 +45,9 @@ class GeoLocationFieldExtension(OpenApiSerializerFieldExtension):
     target_class = "location.classes.GeoLocationSerializerField"
     def map_serializer_field(self, auto_schema, direction):
         return GeoLocation.schema()
+
+
+class DSOPeriodFieldExtension(OpenApiSerializerFieldExtension):
+    target_class = "dso_rest.classes.PeriodSerializerField"
+    def map_serializer_field(self, auto_schema, direction):
+        return Period.schema()

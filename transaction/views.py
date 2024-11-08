@@ -13,6 +13,7 @@ class TransactionFilter(FilterSet):
     username = CharFilter(field_name='id_tag__user__username')
     id_token = CharFilter(field_name='id_tag__idToken')
     transaction_status = CharFilter(field_name='transaction_status')
+    connector_id = CharFilter(field_name='connector__connectorid')
 
     class Meta:
         model = Transaction

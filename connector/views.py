@@ -12,6 +12,7 @@ class ConnectorFilter(FilterSet):
     chargepoint_id = CharFilter(field_name='chargepoint__chargepoint_id')
     availability_status = CharFilter(field_name='availability_status')
     connector_status = CharFilter(field_name='connector_status')
+    connector_id = CharFilter(field_name='connectorid')
 
     class Meta:
         model = Connector

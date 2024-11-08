@@ -17,6 +17,7 @@ from drf_spectacular.types import OpenApiTypes
 
 class IdtagFilter(FilterSet):
     username = CharFilter(field_name='user__username')
+    friendly_name = CharFilter(field_name='friendly_name')
 
     class Meta:
         model = IdTag

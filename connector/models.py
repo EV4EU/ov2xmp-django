@@ -37,7 +37,7 @@ class Connector(models.Model):
 
     # max_voltage, max_amperage, max_electric_power are ommited
 
-    tariff_ids = models.ManyToManyField(Tariff)
+    tariff_ids = models.ManyToManyField(Tariff, null=True, blank=True, default=None)
     
     def __str__(self):
         return "Connector " + str(self.connectorid) + " of " + self.chargepoint.chargepoint_id

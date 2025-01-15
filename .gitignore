@@ -9,6 +9,8 @@ logs
 *.pdf
 *.db
 *.pcap
+.env-local
+.env-docker
 
 # Backup files # 
 *.bak 

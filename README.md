@@ -2,6 +2,25 @@
 
 [![ov2xmp-django](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml/badge.svg)](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml) 
 
+## Citation
+
+If you want to use this work, please cite the following paper:
+
+```bibtex
+@article{DALAMAGKAS2025102494,
+title = {The Open V2X Management Platform: An intelligent charging station management system},
+journal = {Information Systems},
+volume = {129},
+pages = {102494},
+year = {2025},
+issn = {0306-4379},
+doi = {https://doi.org/10.1016/j.is.2024.102494},
+url = {https://www.sciencedirect.com/science/article/pii/S0306437924001522},
+author = {Christos Dalamagkas and V.D. Melissianos and George Papadakis and Angelos Georgakis and Vasileios-Martin Nikiforidis and Kostas Hrissagis-Chrysagis}
+}
+```
+
+## Introduction
 
 This is the main module of the O-V2X-MP that implements all the OCPP functionalities of the platform. In summary, the module consists of the following microservices:
 
@@ -38,32 +57,38 @@ All the above microservices utilise the same source code of Django. The services
     (venv) pip install -r requirements.txt
     ```
 
-4. Load the environment variables that configure `ov2xmp-django`:
+4. If `.env-local` does not exist, create it by copying the `.env-local_template`:
+
+   ```sh
+   (venv) cp .env-local_template .env-local
+   ```
+
+5. Define the environment variables in `.env-local`, and load the file to configure `ov2xmp-django`:
 
     ```sh
     (venv) export $(xargs <.env-local)
     ```
 
-5. Make Migrations and Migrate:
+6. Make Migrations and Migrate:
 
     ```sh
     (venv) python manage.py makemigrations
     (venv) python manage.py migrate
     ```
 
-6. Create a superuser, if it does not already exist:
+7. Create a superuser, if it does not already exist:
 
     ```sh
     (venv) python manage.py createsuperuser
     ```
 
-7. Open a new tmux session:
+8. Open a new tmux session:
 
     ```sh
     (venv) tmux
     ```
 
-8. Inside the tmux session, activate the environment, load the environment variables, and run the daphne server in development mode:
+9.  Inside the tmux session, activate the environment, load the environment variables, and run the daphne server in development mode:
 
     ```sh
     source ./venv/bin/activate
@@ -73,7 +98,7 @@ All the above microservices utilise the same source code of Django. The services
 
     Detach from the tmux session, by pressing `CTRL + B` and `D`.
 
-9. Open a new tmux session by issuing the `tmux` command. Inside the new tmux session, activate the environment, load the environment variables, and start the Sanic webserver:
+10. Open a new tmux session by issuing the `tmux` command. Inside the new tmux session, activate the environment, load the environment variables, and start the Sanic webserver:
 
     ```sh
     source ./venv/bin/activate
@@ -89,7 +114,7 @@ All the above microservices utilise the same source code of Django. The services
 
     Detach from the tmux session, by pressing `CTRL + B` and `D`.
 
-10. Open a new tmux session by issuing the `tmux` command, and start the Celery worker:
+11. Open a new tmux session by issuing the `tmux` command, and start the Celery worker:
 
     ```sh
     source ./venv/bin/activate

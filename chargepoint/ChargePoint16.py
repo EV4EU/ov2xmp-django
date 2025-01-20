@@ -13,7 +13,7 @@ from reservation.models import Reservation as ReservationModel
 from statusnotification.models import Statusnotification as StatusnotificationModel
 from sampledvalue.models import Sampledvalue as SampledvalueModel
 
-import uuid
+from uuid import uuid4
 from django.utils import timezone
 from datetime import datetime, timezone
 import json
@@ -69,7 +69,7 @@ class ChargePoint16(cp):
             firmware_version = firmware_version
         ) 
 
-        return call_result.BootNotificationPayload(
+        return call_result.BootNotification(
             current_time=datetime.now(timezone.utc).isoformat(),
             interval=10,
             status=ocpp_v16_enums.RegistrationStatus.accepted,
@@ -82,7 +82,7 @@ class ChargePoint16(cp):
         current_cp.last_heartbeat = datetime.now(timezone.utc)
         current_cp.save()
 
-        return call_result.HeartbeatPayload(
+        return call_result.Heartbeat(
             current_time=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z"
         )
 
@@ -94,10 +94,11 @@ class ChargePoint16(cp):
             try:
                 connector_to_update = ConnectorModel.objects.filter(chargepoint=current_cp, connectorid=connector_id).get()
                 connector_to_update.connector_status = status
-            except ConnectorModel.DoesNotExist:                
+                connector_to_update.save()
+            except ConnectorModel.DoesNotExist:     
                 connector_to_update = None
                 ConnectorModel.objects.create(
-                    uuid = uuid.uuid4(),
+                    uuid = uuid4(),
                     connectorid = connector_id,
                     connector_status = status,
                     chargepoint = current_cp
@@ -117,14 +118,14 @@ class ChargePoint16(cp):
             vendor_id = kwargs.get('vendor_id', None),
             vendor_error_code = kwargs.get('vendor_error_code', None)
         )
-        
-        return call_result.StatusNotificationPayload()
+
+        return call_result.StatusNotification()
 
 
     @on(ocpp_v16_enums.Action.Authorize)
     def on_authorize(self, id_tag):
         result = authorize_idTag(id_tag)
-        return call_result.AuthorizePayload(id_tag_info=result) # type: ignore
+        return call_result.Authorize(id_tag_info=result) # type: ignore
 
 
     @on(ocpp_v16_enums.Action.StartTransaction)
@@ -160,7 +161,7 @@ class ChargePoint16(cp):
         
         new_transaction.save()
         
-        return call_result.StartTransactionPayload(
+        return call_result.StartTransaction(
             transaction_id = new_transaction.transaction_id,
             id_tag_info = ocpp_v16_datatypes.IdTagInfo(status=result["status"])
         )
@@ -221,21 +222,21 @@ class ChargePoint16(cp):
 
             current_transaction.save()
 
-            return call_result.StopTransactionPayload()
+            return call_result.StopTransaction()
         
         except DatabaseError as e:
             logging.error("Connection error with Django DB. The transaction details for # " + str(transaction_id) + " have not been saved.")
-            return call_result.StopTransactionPayload()
+            return call_result.StopTransaction()
 
 
     @on(ocpp_v16_enums.Action.DiagnosticsStatusNotification)
     def on_DiagnosticsStatusNotification(self, status):
-        return call_result.DiagnosticsStatusNotificationPayload()
+        return call_result.DiagnosticsStatusNotification()
     
     
     @on(ocpp_v16_enums.Action.FirmwareStatusNotification)
     def on_FirmwareNotification(self):
-        return call_result.FirmwareStatusNotificationPayload()
+        return call_result.FirmwareStatusNotification()
 
     ##########################################################################################################################
     #################### ACTIONS INITIATED BY THE CSMS #######################################################################
@@ -243,12 +244,12 @@ class ChargePoint16(cp):
 
     # Reset
     async def reset(self, reset_type):
-        request = call.ResetPayload(type = reset_type)
+        request = call.Reset(type = reset_type)
         return await self.call(request)
 
     # RemoteStartTransaction
     async def remote_start_transaction(self, id_tag, connector_id, charging_profile):
-        request = call.RemoteStartTransactionPayload(
+        request = call.RemoteStartTransaction(
             connector_id=connector_id,
             id_tag=id_tag,
             charging_profile=charging_profile
@@ -257,7 +258,7 @@ class ChargePoint16(cp):
 
     # RemoteStopTransaction
     async def remote_stop_transaction(self, transaction_id):
-        request = call.RemoteStopTransactionPayload(
+        request = call.RemoteStopTransaction(
             transaction_id=transaction_id
         )
         return await self.call(request)
@@ -270,7 +271,7 @@ class ChargePoint16(cp):
             # Get all reservations of the specific EVCS and find the max reservation_id value. then, add +1 (so we do not replace any existing reservation_id on the particular EVCS)
             reservation_id = ReservationModel.objects.filter(connector__chargepoint__chargepoint_id=self.id).aggregate(Max('reservation_id'))["reservation_id__max"] + 1
             
-        request = call.ReserveNowPayload(
+        request = call.ReserveNow(
             connector_id=connector_id,
             id_tag=id_tag,
             expiry_date=expiry_date,
@@ -293,7 +294,7 @@ class ChargePoint16(cp):
 
     # CancelReservation
     async def cancel_reservation(self, reservation_id):
-        request = call.CancelReservationPayload(
+        request = call.CancelReservation(
             reservation_id=reservation_id
         )
         response = await self.call(request)
@@ -307,7 +308,7 @@ class ChargePoint16(cp):
         
     # ChangeAvailability
     async def change_availability(self, connector_id, availability_type):
-        request = call.ChangeAvailabilityPayload(
+        request = call.ChangeAvailability(
             connector_id=connector_id,
             type=availability_type
         )
@@ -315,7 +316,7 @@ class ChargePoint16(cp):
 
     # ChangeConfiguration
     async def change_configuration(self, key, value):
-        request = call.ChangeConfigurationPayload(
+        request = call.ChangeConfiguration(
             key=key,
             value=value
         )
@@ -323,26 +324,26 @@ class ChargePoint16(cp):
     
     # ClearCache
     async def clear_cache(self):
-        request = call.ClearCachePayload()
+        request = call.ClearCache()
         return await self.call(request)
     
     # UnlockConnector
     async def unlock_connector(self, connector_id):
-        request = call.UnlockConnectorPayload(
+        request = call.UnlockConnector(
             connector_id=connector_id
         )
         return await self.call(request)
 
     # GetConfiguration
     async def get_configuration(self, keys):
-        request = call.GetConfigurationPayload(
+        request = call.GetConfiguration(
             key=keys
         )
         return await self.call(request)
 
     # GetCompositeSchedule
     async def get_composite_schedule(self, connector_id, duration, charging_rate_unit_type):
-        request = call.GetCompositeSchedulePayload(
+        request = call.GetCompositeSchedule(
             connector_id= connector_id,
             duration= duration,
             charging_rate_unit= charging_rate_unit_type)
@@ -350,7 +351,7 @@ class ChargePoint16(cp):
         
     # ClearChargingProfile
     async def clear_charging_profile(self, charging_profile_id, connector_id, charging_profile_purpose_type, stack_level):
-        request = call.ClearChargingProfilePayload(
+        request = call.ClearChargingProfile(
             id = charging_profile_id,
             connector_id = connector_id,
             charging_profile_purpose = charging_profile_purpose_type,
@@ -359,14 +360,14 @@ class ChargePoint16(cp):
         
     #SetChargingProfile
     async def set_charging_profile(self, connector_id, charging_profile):
-        request = call.SetChargingProfilePayload(
+        request = call.SetChargingProfile(
             connector_id=connector_id,
             cs_charging_profiles = charging_profile)
         return await self.call(request)
 
     #GetDiagnostics
     async def get_diagnostics(self, location, retries, retry_interval, start_time, stop_time):
-        request = call.GetDiagnosticsPayload(
+        request = call.GetDiagnostics(
             location=location,
             retries=retries,
             retry_interval=retry_interval,
@@ -376,7 +377,7 @@ class ChargePoint16(cp):
 
     #UpdateFirmware
     async def update_firmware(self, location, retries, retrieve_date, retry_interval):
-        request = call.UpdateFirmwarePayload(
+        request = call.UpdateFirmware(
             location=location,
             retries=retries,
             retrieve_date=retrieve_date,
@@ -386,7 +387,7 @@ class ChargePoint16(cp):
 
     #TriggerMessage
     async def trigger_message(self, requested_message, connector_id):
-        request = call.TriggerMessagePayload(
+        request = call.TriggerMessage(
             requested_message=requested_message,
             connector_id=connector_id
         )
@@ -394,12 +395,12 @@ class ChargePoint16(cp):
 
     #GetLocalListVersion
     async def get_local_list_version(self):
-        request = call.GetLocalListVersionPayload()
+        request = call.GetLocalListVersion()
         return await self.call(request)
 
     #SendLocalList
     async def send_local_list(self, list_version, update_type, local_authorization_list=list()):
-        request = call.SendLocalListPayload(
+        request = call.SendLocalList(
             list_version=list_version,
             update_type=update_type,
             local_authorization_list=local_authorization_list

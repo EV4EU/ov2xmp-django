@@ -26,6 +26,7 @@ app = Sanic(__name__)
 app.ctx.CHARGEPOINTS_V16 = {}
 app.ctx.CHARGEPOINTS_V201 = {}
 app.config.FALLBACK_ERROR_FORMAT = "json"
+app.config.WEBSOCKET_PING_INTERVAL = 0  # Disable Websocket ping/pong, since some EV chargers do not respond to pings.
 
 from logstash_async.handler import AsynchronousLogstashHandler
 
@@ -76,6 +77,7 @@ async def reset(request: Request, chargepoint_id: str):
 async def remote_start_transaction(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         connector_id = request.json['connector_id']
+        connector_id = int(connector_id)
         id_tag = request.json['id_tag']
         charging_profile = request.json['charging_profile']
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].remote_start_transaction(id_tag, connector_id, charging_profile)
@@ -89,6 +91,7 @@ async def remote_start_transaction(request: Request, chargepoint_id: str):
 async def remote_stop_transaction(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         transaction_id = request.json['transaction_id']
+        transaction_id = int(transaction_id)
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].remote_stop_transaction(transaction_id)
         return json_ocpp(result)
     else:
@@ -114,6 +117,7 @@ async def reserve_now(request: Request, chargepoint_id: str):
 async def cancel_reservation(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         reservation_id = request.json['reservation_id']
+        reservation_id = int(reservation_id)
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].cancel_reservation(reservation_id)
         return json_ocpp(result)
     else:
@@ -125,6 +129,7 @@ async def cancel_reservation(request: Request, chargepoint_id: str):
 async def change_availability(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         connector_id = request.json['connector_id']
+        connector_id = int(connector_id)
         availability_type = request.json['type']
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].change_availability(connector_id, availability_type)
         return json_ocpp(result)
@@ -158,6 +163,7 @@ async def clear_cache(request: Request, chargepoint_id: str):
 async def unlock_connector(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         connector_id = request.json['connector_id']
+        connector_id = int(connector_id)
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].unlock_connector(connector_id)
         return json_ocpp(result)
     else:
@@ -221,23 +227,24 @@ async def set_charging_profile(request: Request, chargepoint_id: str):
                 }
             }
 
-            if chargingprofile_object.transaction_id is not None:
-                chargingprofile["transactionId"] = chargingprofile_object.transaction_id
+            #if hasattr(chargingprofile_object, 'transaction_id'):
+            #    if chargingprofile_object.transaction_id is not None:
+            #        chargingprofile["transactionId"] = chargingprofile_object.transaction_id
             
             if chargingprofile_object.recurrency_kind is not None:
                 chargingprofile["recurrencyKind"] = chargingprofile_object.recurrency_kind
 
             if chargingprofile_object.valid_from is not None:
-                chargingprofile["validFrom"] = chargingprofile_object.valid_from.utcnow().isoformat()
+                chargingprofile["validFrom"] = chargingprofile_object.valid_from.now().isoformat()
 
             if chargingprofile_object.valid_to is not None:
-                chargingprofile["validTo"] = chargingprofile_object.valid_to.utcnow().isoformat()
+                chargingprofile["validTo"] = chargingprofile_object.valid_to.now().isoformat()
             
             if chargingprofile_object.duration is not None:
                 chargingprofile["chargingSchedule"]["duration"] = chargingprofile_object.duration
 
             if chargingprofile_object.start_schedule is not None:
-                chargingprofile["chargingSchedule"]["startSchedule"] = chargingprofile_object.start_schedule.utcnow().isoformat()
+                chargingprofile["chargingSchedule"]["startSchedule"] = chargingprofile_object.start_schedule.now().isoformat()
             
             if chargingprofile_object.min_charging_rate is not None:
                 chargingprofile["chargingSchedule"]["minChargingRate"] = float(chargingprofile_object.min_charging_rate)
@@ -346,6 +353,12 @@ async def ocpp201_set_charging_profile(request: Request, chargepoint_id: str):
 
 @app.middleware('request')
 async def evcs_validation_middleware(request: Request):
+    """
+    This middleware contains code that activates first when we receive a WebSocket request from an EV Charger.
+    Purpose of this middleware is to check whether the EVCS with the given ID, already exists in the Django DB.
+    This security check is performed if OV2XMP_OCPP_PREREGISTRATION_EVCS is 1. If OV2XMP_OCPP_PREREGISTRATION_EVCS is 0,
+    then the registration status is ignored, and the handshake continues.
+    """
     request_url = request.raw_url.decode()
 
     result = re.search(r'\/ws\/ocpp\/(.*)', request_url)

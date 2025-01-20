@@ -170,41 +170,52 @@ class ChargePoint16(cp):
     @on(ocpp_v16_enums.Action.MeterValues)
     async def on_meterValues(self, connector_id, meter_value, **kwargs):
         transaction_id = kwargs.get('transaction_id', None)
-
-        if transaction_id is not None:
-            wh_meter_last = None
-            wh_meter_last_timestamp = None
-            for _metervalue in meter_value:
-                wh_meter_last_timestamp = _metervalue["timestamp"]
-                for _sampledvalue in _metervalue["sampled_value"]:
-                    SampledvalueModel.objects.create(
-                        transaction = TransactionModel.objects.filter(transaction_id=transaction_id).get(),
-                        timestamp = wh_meter_last_timestamp,
-                        value = _sampledvalue["value"],
-                        context = _sampledvalue.get('context', None),
-                        format = _sampledvalue.get("format", None),
-                        measurand = _sampledvalue.get("measurand", None),
-                        phase = _sampledvalue.get('phase', None),
-                        location = _sampledvalue.get('location', None),
-                        unit = _sampledvalue.get('unit', None)
-                    ).save()
-
-                    if 'unit' in _sampledvalue:
-                        if _sampledvalue['unit'] == "Wh":
-                            wh_meter_last = _sampledvalue['value']
-            
-            if wh_meter_last is not None:
-                TransactionModel.objects.filter(transaction_id=transaction_id).update(wh_meter_last = wh_meter_last, 
-                                                                                      wh_meter_last_timestamp = wh_meter_last_timestamp)
         
-        message = {
-            "transaction_id": transaction_id,
-            "connector_id": connector_id, 
-            "meterValue": meter_value
-        }
-        await broadcast_metervalues(message)
+        # Check if the transaction_id is valid, otherwise return MeterValues.conf
+        if transaction_id is not None and transaction_id > 0:
+            try:
+                # Check if the transaction_id corresponds to a transaction that exists in the database
+                transaction = TransactionModel.objects.get(transaction_id=transaction_id)
+                wh_meter_last = None
+                wh_meter_last_timestamp = None
+                for _metervalue in meter_value:
+                    wh_meter_last_timestamp = _metervalue["timestamp"]
+                    for _sampledvalue in _metervalue["sampled_value"]:
+                        SampledvalueModel.objects.create(
+                            transaction = transaction,
+                            timestamp = wh_meter_last_timestamp,
+                            value = _sampledvalue["value"],
+                            context = _sampledvalue.get('context', None),
+                            format = _sampledvalue.get("format", None),
+                            measurand = _sampledvalue.get("measurand", None),
+                            phase = _sampledvalue.get('phase', None),
+                            location = _sampledvalue.get('location', None),
+                            unit = _sampledvalue.get('unit', None)
+                        ).save()
+        
+                        if 'unit' in _sampledvalue:
+                            if _sampledvalue['unit'] == "Wh":
+                                wh_meter_last = _sampledvalue['value']
+                        
+                        if wh_meter_last is not None:
+                            TransactionModel.objects.filter(transaction_id=transaction_id).update(wh_meter_last = wh_meter_last, 
+                                                                                                  wh_meter_last_timestamp = wh_meter_last_timestamp)
+                        
+                        # if everything is sucessful, broadcast the metervalues message to the django channel
+                        message = {
+                            "transaction_id": transaction_id,
+                            "connector_id": connector_id, 
+                            "meterValue": meter_value
+                        }
+                        await broadcast_metervalues(message)
+                        return call_result.MeterValues()
 
-        return call_result.MeterValuesPayload()
+            except TransactionModel.DoesNotExist:
+                # Return MeterValues.conf if the transaction_id is not found in the database
+                return call_result.MeterValues()
+        else:
+            # If transaction_id is invalid, just return a MeterValues.conf
+            return call_result.MeterValues()
 
 
     @on(ocpp_v16_enums.Action.StopTransaction)

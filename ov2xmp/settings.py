@@ -58,7 +58,6 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'drf_spectacular',
-    'oauth2_authcodeflow',
 
     'dashboard',
     'users',
@@ -89,9 +88,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    'oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware',
-    'oauth2_authcodeflow.middleware.RefreshSessionMiddleware',
 ]
 
 ROOT_URLCONF = 'ov2xmp.urls'
@@ -285,11 +281,12 @@ CELERY_RESULT_EXTENDED = True
 
 
 # === SMTP settings ===
-#EMAIL_USE_TLS = os.environ['OV2XMP_REDIS_BROKER_HOST']
-#EMAIL_HOST = os.environ['OV2XMP_REDIS_BROKER_HOST']
-#EMAIL_HOST_USER = os.environ['OV2XMP_REDIS_BROKER_HOST']
-#EMAIL_HOST_PASSWORD = os.environ['OV2XMP_REDIS_BROKER_HOST']
-#EMAIL_PORT = os.environ['OV2XMP_REDIS_BROKER_HOST']
+EMAIL_USE_TLS = os.environ['OV2XMP_EMAIL_USE_TLS']
+EMAIL_HOST = os.environ['OV2XMP_EMAIL_HOST']
+EMAIL_HOST_USER = os.environ['OV2XMP_EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = os.environ['OV2XMP_EMAIL_HOST_PASSWORD']
+EMAIL_PORT = int(os.environ['OV2XMP_EMAIL_PORT'])
+DEFAULT_FROM_EMAIL = 'O-V2X-MP EV4EU <ev4eu.mail.service@gmail.com>'
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
@@ -323,10 +320,12 @@ SPECTACULAR_SETTINGS = {
 
 
 '''
-# === Logging settings ===
-# If Django does not have write permissions in `/var/log/ov2xmp/`, Django cannot start.
-if not os.path.exists('/var/log/ov2xmp/'):
-    os.makedirs('/var/log/ov2xmp/')
+# Define the log directory inside the project folder (create 'logs' directory in your project)
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+
+# Create the logs directory if it doesn't exist
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
 
 LOGGING = {
     'version': 1,
@@ -340,7 +339,7 @@ LOGGING = {
         'default': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/ov2xmp/ov2xmp.log',
+            'filename': os.path.join(LOG_DIR, 'ov2xmp.log'),  # Store log in 'logs/ov2xmp.log'
             'maxBytes': 1024*1024*10,  # 10 MB
             'backupCount': 5,
             'formatter': 'standard',
@@ -348,7 +347,7 @@ LOGGING = {
         'request_handler': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/ov2xmp/django_requests.log',
+            'filename': os.path.join(LOG_DIR, 'django_requests.log'),  # Store request log in 'logs/django_requests.log'
             'maxBytes': 1024*1024*10,  # 10 MB
             'backupCount': 5,
             'formatter': 'standard',

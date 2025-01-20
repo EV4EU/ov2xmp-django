@@ -5,7 +5,7 @@ from enum import Enum
 
 class OcppCommandSerializer(serializers.Serializer):
     chargepoint_id = serializers.CharField(max_length=255)
-    sync = serializers.BooleanField(required=False, default=True) # type: ignore
+    sync = serializers.BooleanField(required=False, default=True)
     class Meta:
         fields = "__all__"
 
@@ -15,7 +15,7 @@ class Ocpp16ResetSerializer(OcppCommandSerializer):
 
 
 class Ocpp16RemoteStartTransactionSerializer(OcppCommandSerializer):
-    connector_id = serializers.IntegerField(default=None)
+    connector_id = serializers.IntegerField(required=False, default=None)
     id_tag = serializers.CharField(max_length=255)
 
 
@@ -56,14 +56,14 @@ class Ocpp16GetConfigurationSerializer(OcppCommandSerializer):
 class Ocpp16GetCompositeScheduleSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField()
     duration = serializers.IntegerField()
-    charging_rate_unit_type = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.ChargingRateUnitType))
+    charging_rate_unit_type = serializers.ChoiceField(required=False, default=None, choices=tuple(member.value for member in ocppv16_enums.ChargingRateUnitType))
 
 
 class Ocpp16ClearChargingProfileSerializer(OcppCommandSerializer):
-    charging_profile_id = serializers.IntegerField(required=False)
-    connector_id = serializers.IntegerField(required=False)
-    charging_profile_purpose_type = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.ChargingProfilePurposeType))
-    stack_level = serializers.IntegerField(required=False)    
+    charging_profile_id = serializers.IntegerField(required=False, default=None)
+    connector_id = serializers.IntegerField(required=False, default=None)
+    charging_profile_purpose_type = serializers.ChoiceField(required=False, default=None, choices=tuple(member.value for member in ocppv16_enums.ChargingProfilePurposeType))
+    stack_level = serializers.IntegerField(required=False, default=None)    
 
 
 class Ocpp16SetChargingProfileSerializer(OcppCommandSerializer):
@@ -73,22 +73,22 @@ class Ocpp16SetChargingProfileSerializer(OcppCommandSerializer):
 
 class Ocpp16GetDiagnosticsSerializer(OcppCommandSerializer):
     location = serializers.CharField(max_length=2000)
-    retries = serializers.IntegerField(required=False)
-    retry_interval = serializers.IntegerField(required=False)
-    start_time = serializers.DateTimeField(required=False)
-    stop_time = serializers.DateTimeField(required=False)
+    retries = serializers.IntegerField(required=False, default=None)
+    retry_interval = serializers.IntegerField(required=False, default=None)
+    start_time = serializers.DateTimeField(required=False, default=None)
+    stop_time = serializers.DateTimeField(required=False, default=None)
 
 
 class Ocpp16UpdateFirmwareSerializer(OcppCommandSerializer):
     location = serializers.CharField(max_length=2000)
-    retries = serializers.IntegerField(required=False)
+    retries = serializers.IntegerField(required=False, default=None)
     retrieve_date = serializers.DateTimeField()
-    retry_interval = serializers.IntegerField(required=False)
+    retry_interval = serializers.IntegerField(required=False, default=None)
 
 
 class Ocpp16TriggerMessasgeSerializer(OcppCommandSerializer):
-    requested_message = serializers.ChoiceField(required=False, choices=tuple(member.value for member in ocppv16_enums.MessageTrigger))
-    connector_id = serializers.IntegerField(required=False)
+    requested_message = serializers.ChoiceField(choices=tuple(member.value for member in ocppv16_enums.MessageTrigger))
+    connector_id = serializers.IntegerField(required=False, default=None)
 
 
 class Ocpp16SendLocalListSerializer(OcppCommandSerializer):

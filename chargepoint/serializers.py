@@ -12,6 +12,13 @@ class ChargepointSerializer(serializers.ModelSerializer):
     location = RelatedFieldAlternative(queryset=Location.objects.all(), serializer=LocationSerializer)
     #location = LocationSerializer(allow_null=True, read_only=True)
 
+    chargepoint_id = serializers.PrimaryKeyRelatedField(read_only=True)
+    ip_address = serializers.CharField(read_only=True)
+    websocket_port = serializers.IntegerField(read_only=True)
+    connected = serializers.BooleanField(read_only=True)
+    ocpp_version = serializers.CharField(read_only=True)
+    last_heartbeat = serializers.DateTimeField(read_only=True)
+
     class Meta:
         model = Chargepoint
         fields = "__all__"

@@ -16,18 +16,36 @@ class DSOSignalApiView(CreateAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = DSOSignalSerializer
 
-    def post(self, request, *args, **kwargs):
-        '''
-        Send a signal to the CPO
-        '''
+#    def post(self, request, *args, **kwargs):
+#        '''
+#        Send a signal to the CPO
+#        '''
+#
+#        serializer = DSOSignalSerializer(data=request.data)
+#        if serializer.is_valid():
+#            if serializer.data["sync"]:
+#                task = process_dso_signal(serializer.data) # type: ignore
+#                return Response(task, status=status.HTTP_200_OK)
+#            else:
+#                task = process_dso_signal(serializer.data) # type: ignore
+#                return Response({"message_code": MESSAGE_CODE.TASK_SUBMITTED.name, "message": MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
+#        else:
+#            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def post(self, request, *args, **kwargs):
         serializer = DSOSignalSerializer(data=request.data)
         if serializer.is_valid():
             if serializer.data["sync"]:
-                task = process_dso_signal(serializer.data) # type: ignore
+                structured_data = serializer.data  # Already validated data
+                task = process_dso_signal(structured_data)
                 return Response(task, status=status.HTTP_200_OK)
             else:
-                task = process_dso_signal(serializer.data) # type: ignore
-                return Response({"message_code": MESSAGE_CODE.TASK_SUBMITTED.name, "message": MESSAGE_CODE.TASK_SUBMITTED.value, "task_id": task.id}, status=status.HTTP_200_OK)
+                task = process_dso_signal(serializer.data)
+                return Response({
+                    "message_code": MESSAGE_CODE.TASK_SUBMITTED.name,
+                    "message": MESSAGE_CODE.TASK_SUBMITTED.value,
+                    "task_id": task.id
+                }, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

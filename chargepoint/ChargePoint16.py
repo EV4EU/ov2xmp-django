@@ -14,6 +14,9 @@ from statusnotification.models import Statusnotification as StatusnotificationMo
 from sampledvalue.models import Sampledvalue as SampledvalueModel
 
 from uuid import uuid4
+from uuid import UUID
+from decimal import Decimal
+from chargingprofile.models import Chargingprofile as ChargingprofileModel
 from django.utils import timezone
 from datetime import datetime, timezone
 import json
@@ -23,6 +26,26 @@ import logging
 from django.db.models import Max
 
 channel_layer = get_channel_layer()
+
+
+def convert_special_types(obj):
+    """
+    Helper function that recursively traverses through a dictionary or list, and converts
+    datetime to string via isoformat(), UUID to string, and Decimal to float.
+    """
+    if isinstance(obj, dict):
+        return {key: convert_special_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_special_types(item) for item in obj]
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, UUID):
+        return str(obj)
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    else:
+        return obj
+
 
 async def broadcast_metervalues(message):
     message = json.dumps(message)
@@ -147,6 +170,24 @@ class ChargePoint16(cp):
             new_transaction.id_tag = idTagModel.objects.get(idToken=id_tag)
             try:
                 new_transaction.connector = ConnectorModel.objects.filter(connectorid=connector_id, chargepoint=current_cp).get()
+
+                # Retrieve the charging profile currently associated with the connector
+                chargingprofile_queryset = ChargingprofileModel.objects.filter(chargingprofile_id=new_transaction.connector.charging_profile)
+                # Dump the charging profile and save it as attribute of the transaction
+                # TODO: This code always takes the first chargingprofile, however the connector may have multiple charging profiles. To do this correctly, get the charging profile with the greatest stack level.
+                chargingprofile = list(chargingprofile_queryset.values())
+                if len(chargingprofile) > 0:
+                    chargingprofile = chargingprofile[0]
+                    new_transaction.chargingprofile = convert_special_types(chargingprofile)
+                else:
+                    new_transaction.chargingprofile = None
+
+                # Retrieve all the tariffs currently associated with the connector
+                tariff_queryset = new_transaction.connector.tariff_ids.all()
+                # Dump the tariff objects and save them as attribute of the transaction
+                tariff_list = list(tariff_queryset.values())
+                new_transaction.tariffs = convert_special_types(tariff_list)
+
             except ConnectorModel.DoesNotExist:
                 pass
             reservation_id = kwargs.get('reservation_id', None)

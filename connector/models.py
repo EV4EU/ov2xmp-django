@@ -4,6 +4,7 @@ from ocpp.v16 import enums as enums_v16
 from uuid import uuid4
 from ocpi.models import Tariff
 
+from django.contrib.postgres.fields import ArrayField  # Import ArrayField
 
 # this needs to be extended, according to OCPI
 class ConnectorType(models.TextChoices):
@@ -37,7 +38,15 @@ class Connector(models.Model):
 
     # max_voltage, max_amperage, max_electric_power are ommited
 
-    tariff_ids = models.ManyToManyField(Tariff, null=True, blank=True, default=None)
+    tariff_ids = models.ManyToManyField(Tariff, default=None)
     
+    # TODO: This should be ManyToMany field
+    charging_profile = ArrayField(
+        base_field=models.IntegerField(),  
+        null=True, 
+        blank=True,  
+        default=list,  
+    )
+
     def __str__(self):
         return "Connector " + str(self.connectorid) + " of " + self.chargepoint.chargepoint_id

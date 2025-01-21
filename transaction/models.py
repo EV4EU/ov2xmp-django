@@ -3,6 +3,7 @@ from idtag.models import IdTag
 from uuid import uuid4
 from chargingprofile.models import Chargingprofile
 from connector.models import Connector
+from django.contrib.postgres.fields import ArrayField
 
 
 class TransactionStatus(models.TextChoices):
@@ -25,4 +26,5 @@ class Transaction(models.Model):
     id_tag = models.ForeignKey(IdTag, on_delete=models.SET_NULL, null=True, default=None)
     reason_stopped = models.CharField(max_length=50, null=True)
     transaction_status = models.CharField(max_length=15, choices=TransactionStatus.choices, default=TransactionStatus.started)
-    chargingprofile = models.ForeignKey(Chargingprofile, on_delete=models.SET_NULL, null=True, default=None, blank=True)
+    chargingprofile = models.JSONField(null=True, default=None, blank=True)
+    tariffs = ArrayField(base_field=models.JSONField(), null=True, default=None, blank=True)

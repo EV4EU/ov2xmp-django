@@ -172,15 +172,15 @@ class ChargePoint16(cp):
                 new_transaction.connector = ConnectorModel.objects.filter(connectorid=connector_id, chargepoint=current_cp).get()
 
                 # Retrieve the charging profile currently associated with the connector
-                chargingprofile_queryset = ChargingprofileModel.objects.filter(chargingprofile_id=new_transaction.connector.charging_profile)
+                # chargingprofile_queryset = ChargingprofileModel.objects.filter(chargingprofile_id=new_transaction.connector.charging_profile)
                 # Dump the charging profile and save it as attribute of the transaction
                 # TODO: This code always takes the first chargingprofile, however the connector may have multiple charging profiles. To do this correctly, get the charging profile with the greatest stack level.
-                chargingprofile = list(chargingprofile_queryset.values())
-                if len(chargingprofile) > 0:
-                    chargingprofile = chargingprofile[0]
-                    new_transaction.chargingprofile = convert_special_types(chargingprofile)
-                else:
-                    new_transaction.chargingprofile = None
+                #chargingprofile = list(chargingprofile_queryset.values())
+                #if len(chargingprofile) > 0:
+                #    chargingprofile = chargingprofile[0]
+                #    new_transaction.chargingprofile = convert_special_types(chargingprofile)
+                #else:
+                new_transaction.chargingprofile = None
 
                 # Retrieve all the tariffs currently associated with the connector
                 tariff_queryset = new_transaction.connector.tariff_ids.all()

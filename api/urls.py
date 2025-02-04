@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from chargepoint.views import ChargepointApiView, ChargepointDetailApiView
 from connector.views import ConnectorApiView, ConnectorDetailApiView
 from chargingprofile.views import ChargingprofileApiView, ChargingprofileDetailApiView
@@ -14,7 +14,8 @@ from users.views import UserApiView, UserDetailApiView, UserCreateApiView, MyTok
 from ocpi.views import TariffApiView, TariffDetailApiView, TariffElementApiView, TariffElementDetailApiView, CdrApiView, CdrDetailApiView
 from dso_rest.views import DSOSignalApiView
 from mailsending.views import SendEmailView
-
+from users.views import RequestPasswordReset
+from users.views import ResetPassword
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from rest_framework_simplejwt.views import (
@@ -45,6 +46,9 @@ urlpatterns = [
     path('user/create/', UserCreateApiView.as_view()),
     path('user/', UserApiView.as_view()),
     path('user/<str:username>/', UserDetailApiView.as_view()),
+    path('user/password-reset/request/', RequestPasswordReset.as_view()),
+    path('user/password-reset/submit/', ResetPassword.as_view()),
+
 
     path('idtag/', IdtagApiView.as_view()),
     path('idtag/<str:id_token>/', IdtagDetailApiView.as_view()),

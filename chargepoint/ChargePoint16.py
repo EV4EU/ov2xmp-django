@@ -242,14 +242,14 @@ class ChargePoint16(cp):
                             TransactionModel.objects.filter(transaction_id=transaction_id).update(wh_meter_last = wh_meter_last, 
                                                                                                   wh_meter_last_timestamp = wh_meter_last_timestamp)
                         
-                        # if everything is sucessful, broadcast the metervalues message to the django channel
-                        message = {
-                            "transaction_id": transaction_id,
-                            "connector_id": connector_id, 
-                            "meterValue": meter_value
-                        }
-                        await broadcast_metervalues(message)
-                        return call_result.MeterValues()
+                    # if everything is sucessful, broadcast the metervalues message to the django channel
+                    message = {
+                        "transaction_id": transaction_id,
+                        "connector_id": connector_id, 
+                        "meterValue": meter_value
+                    }
+                    await broadcast_metervalues(message)
+                return call_result.MeterValues()
 
             except TransactionModel.DoesNotExist:
                 # Return MeterValues.conf if the transaction_id is not found in the database

@@ -30,8 +30,9 @@ channel_layer = get_channel_layer()
 
 def convert_special_types(obj):
     """
-    Helper function that recursively traverses through a dictionary or list, and converts
-    datetime to string via isoformat(), UUID to string, and Decimal to float.
+    Helper function that serializes Python dictionaries with nested non-serializable Python objects. 
+    It recursively traverses through a dictionary or list, and converts datetime to string via 
+    isoformat(), UUID to string, and Decimal to float.
     """
     if isinstance(obj, dict):
         return {key: convert_special_types(value) for key, value in obj.items()}
@@ -170,17 +171,26 @@ class ChargePoint16(cp):
             new_transaction.id_tag = idTagModel.objects.get(idToken=id_tag)
             try:
                 new_transaction.connector = ConnectorModel.objects.filter(connectorid=connector_id, chargepoint=current_cp).get()
-
                 # Retrieve the charging profile currently associated with the connector
-                # chargingprofile_queryset = ChargingprofileModel.objects.filter(chargingprofile_id=new_transaction.connector.charging_profile)
-                # Dump the charging profile and save it as attribute of the transaction
-                # TODO: This code always takes the first chargingprofile, however the connector may have multiple charging profiles. To do this correctly, get the charging profile with the greatest stack level.
-                #chargingprofile = list(chargingprofile_queryset.values())
-                #if len(chargingprofile) > 0:
-                #    chargingprofile = chargingprofile[0]
-                #    new_transaction.chargingprofile = convert_special_types(chargingprofile)
-                #else:
-                new_transaction.chargingprofile = None
+                chargingprofiles = new_transaction.connector.charging_profile
+                if chargingprofiles is not None:
+                    max_stack_level = 0
+                    selected_chargingprofile = None
+                    for _chargingprofile in chargingprofiles:
+                        _chargingprofile = ChargingprofileModel.objects.get(chargingprofile_id=_chargingprofile)
+                        current_date = datetime.now()
+                        if _chargingprofile.valid_from is not None and _chargingprofile.valid_to is not None:
+                            if not (_chargingprofile.valid_from < current_date and _chargingprofile.valid_to > current_date):
+                                continue  # If valid_from and valid_to are set, but the chargingprofile is outside of the current date, then skip it
+                        
+                        if _chargingprofile.stack_level > max_stack_level:
+                            selected_chargingprofile = _chargingprofile
+                            max_stack_level = _chargingprofile.stack_level
+
+                    if selected_chargingprofile is not None:
+                        new_transaction.chargingprofile_applied = convert_special_types(selected_chargingprofile)
+                    else:
+                        new_transaction.chargingprofile_applied = None
 
                 # Retrieve all the tariffs currently associated with the connector
                 tariff_queryset = new_transaction.connector.tariff_ids.all()

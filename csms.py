@@ -227,9 +227,9 @@ async def set_charging_profile(request: Request, chargepoint_id: str):
                 }
             }
 
-            #if hasattr(chargingprofile_object, 'transaction_id'):
-            #    if chargingprofile_object.transaction_id is not None:
-            #        chargingprofile["transactionId"] = chargingprofile_object.transaction_id
+            if hasattr(chargingprofile_object, 'transaction_id'):
+                if chargingprofile_object.transaction_id is not None:
+                    chargingprofile["transactionId"] = chargingprofile_object.transaction_id
             
             if chargingprofile_object.recurrency_kind is not None:
                 chargingprofile["recurrencyKind"] = chargingprofile_object.recurrency_kind

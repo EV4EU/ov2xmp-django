@@ -17,6 +17,7 @@ from mailsending.views import SendEmailView
 from users.views import RequestPasswordReset
 from users.views import ResetPassword
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from prediction.views import PredictionApiView
 
 
 from rest_framework_simplejwt.views import (
@@ -98,4 +99,5 @@ urlpatterns = [
 
     path('dso/signal/', DSOSignalApiView.as_view()),
     path('mailsending/', SendEmailView.as_view(), name='mailsending'),
+    path('prediction/', PredictionApiView.as_view()),
 ]

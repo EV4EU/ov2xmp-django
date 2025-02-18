@@ -37,10 +37,7 @@ ALLOWED_HOSTS = os.environ["OV2XMP_DJANGO_ALLOWED_HOSTS"].split(",")
 # Application definition
 INSTALLED_APPS = [
     'daphne',
-    'celery',
 
-    "crispy_forms",
-    "crispy_bootstrap5",
     'timezone_field',
 
     'django.contrib.admin',
@@ -51,7 +48,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
 
+    'celery',
     'django_celery_results',
+    'django_celery_beat',
 
     'channels',
     'channels_redis',
@@ -59,7 +58,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
 
-    'dashboard',
     'users',
     'chargepoint',
     'connector',

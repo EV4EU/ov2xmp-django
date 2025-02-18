@@ -18,8 +18,8 @@ from users.views import RequestPasswordReset
 from users.views import ResetPassword
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
+
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView
 )
@@ -97,5 +97,5 @@ urlpatterns = [
     path('ocpp16/sendlocallist/', Ocpp16SendLocalListApiView.as_view()),
 
     path('dso/signal/', DSOSignalApiView.as_view()),
-    path('mailsending/', SendEmailView.as_view(), name='mailsending')
+    path('mailsending/', SendEmailView.as_view(), name='mailsending'),
 ]

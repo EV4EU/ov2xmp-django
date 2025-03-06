@@ -34,9 +34,7 @@ Check the [Deployment Guide](https://github.com/EV4EU/ov2xmp-django/wiki/Deploym
 
 ## O-V2X-MP REST API
 
-To access the Swagger page of the O-V2X-MP REST API, visit the following page:
-
-`http://ov2xmp.trsc.net:8000/api`
+To access the Swagger page of the O-V2X-MP REST API through the browser, visit the `/api` page of the `ov2xmp-daphne` service.
 
 Follow the steps bellow to get authorization based on JWT:
 
@@ -61,6 +59,4 @@ Follow the steps bellow to get authorization based on JWT:
 
 ## O-V2X-MP Django Admin page
 
-The django admin page allows you to view and modify all the django objects of O-V2X-MP (e.g., chargepoints, idTags, charging profiles, tasks, etc). To access that page, visit the following link:
-
-`http://ov2xmp.trsc.net:8000/admin`
+The django admin page allows you to view and modify all the django objects of O-V2X-MP (e.g., chargepoints, idTags, charging profiles, tasks, etc). To access that page, visit the `/admin` page of the `ov2xmp-daphne` service.

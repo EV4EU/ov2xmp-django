@@ -262,7 +262,6 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-'''
 # Define the log directory inside the project folder (create 'logs' directory in your project)
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 
@@ -279,38 +278,52 @@ LOGGING = {
         },
     },
     'handlers': {
-        'default': {
+        'csms': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOG_DIR, 'ov2xmp.log'),  # Store log in 'logs/ov2xmp.log'
-            'maxBytes': 1024*1024*10,  # 10 MB
-            'backupCount': 5,
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'csms.log'),  # Store log in 'logs/csms.log'
+            'when': 'midnight',  
+            'backupCount': 0,
             'formatter': 'standard',
         },
-        'request_handler': {
+        'django_handler': {
+            'level': 'INFO',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'django.log'),  # Store django log in 'logs/django.log'
+            'when': 'midnight',  
+            'backupCount': 0,
+            'formatter': 'standard',
+        },
+        'ov2xmp_handler': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOG_DIR, 'django_requests.log'),  # Store request log in 'logs/django_requests.log'
-            'maxBytes': 1024*1024*10,  # 10 MB
-            'backupCount': 5,
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'ov2xmp.log'),  # Store django log in 'logs/django.log'
+            'when': 'midnight',  
+            'backupCount': 0,
             'formatter': 'standard',
         }
+
     },
     'loggers': {
-        '': {
-            'handlers': ['default'],
+        'ocpp': {  # This is the logger of mobilityhouse ocpp library
+            'handlers': ['csms'],
             'level': 'DEBUG',
             'propagate': True
         },
-        'django.request': {
-            'handlers': ['request_handler'],
+        'sanic': {  # This is the logger of sanic, the websocket server of csms.py
+            'handlers': ['csms'],
             'level': 'DEBUG',
-            'propagate': False
+            'propagate': True
         },
-        'django_auth_ldap': {
-            'level': 'DEBUG', 
-            'handlers': ['default']
-        }
+        'django': {  # This is the django logger
+            'handlers': ['django_handler'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'ov2xmp': {  # This is the logger for showing logs specific to the ov2xmp django apps (e.g. dso_rest)
+            'handlers': ['ov2xmp_handler'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
     },
 }
-'''

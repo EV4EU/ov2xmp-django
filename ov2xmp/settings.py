@@ -116,52 +116,6 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# === OAuth2 Settings === (https://gitlab.com/systra/qeto/lib/django-oauth2-authcodeflow)
-# OIDC should be manually enabled in .env
-if int(os.environ['OV2XMP_AUTH_OIDC_ENABLE']):
-    AUTHENTICATION_BACKENDS.append('oauth2_authcodeflow.auth.AuthenticationBackend')
-    OIDC_OP_DISCOVERY_DOCUMENT_URL = os.environ['OV2XMP_AUTH_OIDC_OP_DISCOVERY_DOCUMENT_URL']
-    OIDC_RP_CLIENT_ID = os.environ['OV2XMP_AUTH_OIDC_RP_CLIENT_ID']
-    OIDC_RP_CLIENT_SECRET = os.environ['OV2XMP_AUTH_OIDC_RP_CLIENT_SECRET']
-    SESSION_COOKIE_SECURE = True
-    OIDC_CREATE_USER = True
-
-# === LDAP Settings ===
-# LDAP should be manually enabled in .env
-# TODO: Cross-check the settings with similar projects. Why we use a CustomLDAPBackend?
-if int(os.environ['OV2XMP_AUTH_LDAP_ENABLE']):
-    import ldap
-
-    # The custom LDAP backend is used, instead of the default
-    AUTHENTICATION_BACKENDS.append('ov2xmp.ldap.CustomLDAPBackend')
-
-     # The following format is expected: ldap://ldap.example.com
-    AUTH_LDAP_SERVER_URI = os.environ['OV2XMP_AUTH_LDAP_SERVER_URI']
-
-    # Read-only user that is able to bind and search for other users. Some LDAP servers support anonymous login, however, we assume that a 
-    # bind account must be provided.
-    AUTH_LDAP_BIND_DN = os.environ['OV2XMP_AUTH_LDAP_BIND_DN']
-    AUTH_LDAP_BIND_PASSWORD = os.environ['OV2XMP_AUTH_LDAP_BIND_PASSWORD']
-    AUTH_LDAP_USER_DN_TEMPLATE = "CN=%(user)s," + os.environ['OV2XMP_AUTH_LDAP_SEARCH_DN']
-
-    # Enforce TLS - We do not accept transmitting LDAP credentials without TLS!
-    AUTH_LDAP_START_TLS = True
-
-    # We disable cerificate verification, because many LDAP servers usually have self-signed certificates. 
-    AUTH_LDAP_GLOBAL_OPTIONS = {
-        ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER   # type: ignore
-    }
-
-    # Maps basic user attributes with LDAP fields
-    AUTH_LDAP_USER_ATTR_MAP = {
-        # AUTH_LDAP_USER_ATTR_MAP_FIRSTNAME is usually `givenName`.
-        "first_name": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_FIRSTNAME'],  
-        # AUTH_LDAP_USER_ATTR_MAP_LASTNAME is usually `sn`.
-        "last_name": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_LASTNAME'],
-        # AUTH_LDAP_USER_ATTR_MAP_EMAIL is usually `mail`.
-        "email": os.environ['OV2XMP_AUTH_LDAP_USER_ATTR_MAP_EMAIL']
-    }
-
 # === SimpleJWT Settings ===
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=int(os.environ['OV2XMP_AUTH_TOKEN_LIFETIME_DAYS'])),
@@ -258,15 +212,6 @@ MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "login"
-LOGIN_URL = 'login'
-
-MESSAGE_TAGS = {
-    messages.INFO: 'primary',
-    messages.DEBUG: 'primary',
-    messages.ERROR: 'danger',
-}
 
 # === Celery settings ===
 CELERY_BROKER_URL = "redis://" + os.environ['OV2XMP_REDIS_BROKER_HOST'] + ":" + os.environ['OV2XMP_REDIS_BROKER_PORT'] + "/"

@@ -1,8 +1,6 @@
-from enum import Enum
-import json
 from django.db import models
 from pydantic.main import BaseModel as PydanticBaseModel
-from typing import List, Optional
+from typing import Optional
 from rest_framework.fields import JSONField
 
 class TariffType(models.TextChoices):
@@ -58,8 +56,8 @@ class PriceComponent(PydanticBaseModel):
     step_size: int    
 
 class Price(PydanticBaseModel):
-    excl_vat: int
-    incl_vat: int
+    excl_vat: float
+    incl_vat: float
 
 class DisplayText(PydanticBaseModel):
     language: str
@@ -88,6 +86,13 @@ class CdrDimension(PydanticBaseModel):
     type: CdrDimensionType
     volume: float
 
+class ChargingPeriod(PydanticBaseModel):
+    start_date_time: str
+    dimensions: CdrDimension
+    tariff_id: Optional[str]
+
+class ChargingPeriodSerializerField(JSONField):
+    pass
 
 class PriceComponentSerializerField(JSONField):
     pass

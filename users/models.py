@@ -15,7 +15,7 @@ class Profile(models.Model):
     cc_number = CardNumberField(null=True, blank=True)
     cc_expirydate = CardExpiryField(null=True, blank=True)
     tariff_preference = models.FloatField(null=True, default=None, blank=True)
-
+    credit_balance = models.FloatField(default=0)
 
     def __str__(self):
         return f'{self.user.username} Profile'

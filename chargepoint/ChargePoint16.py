@@ -25,6 +25,7 @@ from channels.layers import get_channel_layer
 from django.db import DatabaseError
 import logging
 from django.db.models import Max
+from ocpi.tasks import create_cdr, apply_cdr
 
 import pytz
 
@@ -268,6 +269,12 @@ class ChargePoint16(cp):
                 current_transaction.reason_stopped = reason
 
             current_transaction.save()
+
+            result, cdr = create_cdr(transaction_id)  # type: ignore
+            ov2xmp_logger.info(result)
+
+            if result["success"] and current_transaction.id_tag is not None:
+                apply_cdr(cdr=cdr, user=current_transaction.id_tag.user)
 
             return call_result.StopTransaction()
         

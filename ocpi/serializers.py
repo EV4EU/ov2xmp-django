@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import TariffElement, Tariff, Cdr, ChargingPeriod
 from rest_framework.fields import ListField
-from ocpi.classes import PriceComponentSerializerField, PriceSerializerField, TariffRestrictionsSerializerField, DisplayTextSerializerField, ManyToManyFieldWriteOnlySerializerField
+from ocpi.classes import PriceComponentSerializerField, PriceSerializerField, TariffRestrictionsSerializerField, DisplayTextSerializerField, ManyToManyFieldWriteOnlySerializerField, ChargingPeriodSerializerField
 from rest_framework.exceptions import ValidationError
 from rest_framework.status import HTTP_400_BAD_REQUEST
 
@@ -46,17 +46,11 @@ class TariffSerializerWriteOnly(TariffSerializerReadOnly):
         return new_tariff
 
 
-class ChargingPeriodSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChargingPeriod
-        fields = ['start_date_time', 'dimensions', 'tariff_id']
-
-
 class CdrSerializer(serializers.ModelSerializer):
     
     session_id = serializers.SlugRelatedField(slug_field='uuid', read_only=True)
     tariffs = TariffSerializerReadOnly(read_only=True, many=True)
-    charging_periods = ChargingPeriodSerializer(read_only=True, many=True)
+    charging_periods = ChargingPeriodSerializerField(read_only=True)
     total_cost = PriceSerializerField(required=False)
     total_fixed_cost = PriceSerializerField(required=False)
     total_energy_cost = PriceSerializerField(required=False)

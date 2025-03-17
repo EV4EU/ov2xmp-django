@@ -3,7 +3,7 @@ import json
 import os
 from django.contrib.postgres.fields import ArrayField
 from ov2xmp.validators import JSONSchemaValidator
-from ocpi.classes import PriceComponent, TariffType, TariffRestrictions, Price, AuthMethod, CdrDimension
+from ocpi.classes import PriceComponent, TariffType, TariffRestrictions, Price, AuthMethod, ChargingPeriod
 from uuid import uuid4
 from idtag.models import IdTag
 from location.models import Location
@@ -48,14 +48,6 @@ class Tariff(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
     elements = models.ManyToManyField(TariffElement)
 
-# ChargingPeriod instances must be created automatically by the backend - no dedicated rest apis are needed for ChargingPeriods
-class ChargingPeriod(models.Model):
-    start_date_time = models.DateTimeField()
-    dimensions = models.JSONField(
-        default=dict,
-        validators=[JSONSchemaValidator(limit_value=CdrDimension.schema())])
-    tariff_id = models.ForeignKey(Tariff, on_delete=models.SET_NULL, blank=True, null=True)
-
 
 class Cdr(models.Model):
     country_code = models.CharField(max_length=2, default=OV2XMP_OCPI_COUNTRYCODE)
@@ -69,8 +61,10 @@ class Cdr(models.Model):
     authorization_reference = models.CharField(max_length=36, null=True, blank=True)
     cdr_location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True) # The cdr_location must be filled by traversing through session_id__connector__chargepoint__location
     meter_id = models.CharField(max_length=3, null=True, blank=True)
-    tariffs = models.ManyToManyField(Tariff)   # The relevant Tariff objects must be chosen dynamically by the backend
-    charging_periods = models.ManyToManyField(ChargingPeriod)
+    tariffs = ArrayField(base_field=models.JSONField())
+    charging_periods = ArrayField(base_field=models.JSONField(
+        default=dict,
+        validators=[JSONSchemaValidator(limit_value=ChargingPeriod.schema())]))
     # signed_data is ommitted
     total_cost = models.JSONField(
         default=dict,
@@ -98,6 +92,3 @@ class Cdr(models.Model):
     credit_reference_id = models.CharField(max_length=39, null=True, blank=True)
     home_charging_compensation = models.BooleanField()
     last_updated = models.DateTimeField(auto_now=True)
-
-
-# total_charging_time = total_time - total_parking_time

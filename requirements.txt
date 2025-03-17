@@ -4,8 +4,8 @@ channels-redis
 crispy-bootstrap5
 daphne
 Django
-django-auth-ldap
 django-celery-results
+django-celery-beat
 django-crispy-forms
 django-oauth2-authcodeflow
 django-timezone-field
@@ -16,8 +16,11 @@ Pillow
 psycopg2-binary
 redis
 requests
+
 sanic
-websockets
+# https://github.com/sanic-org/sanic/issues/3031
+websockets==14.1
+
 django-countries
 Twisted[tls,http2]
 elasticsearch

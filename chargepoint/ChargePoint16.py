@@ -1,7 +1,7 @@
 from ocpp.routing import on
 from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result, call
-import ocpp.v16.enums as ocpp_v16_enums
+from ocpp.v16.enums import Action, RegistrationStatus, AuthorizationStatus, ReservationStatus
 from ocpp.v16 import datatypes as ocpp_v16_datatypes
 
 from chargepoint.models import Chargepoint as ChargepointModel
@@ -14,9 +14,10 @@ from statusnotification.models import Statusnotification as StatusnotificationMo
 from sampledvalue.models import Sampledvalue as SampledvalueModel
 
 from uuid import uuid4
-from uuid import UUID
-from decimal import Decimal
+from api.helpers import convert_special_types
 from chargingprofile.models import Chargingprofile as ChargingprofileModel
+from chargingprofile.serializers import ChargingprofileSerializer
+from ocpi.serializers import TariffSerializerReadOnly
 from django.utils import timezone
 from datetime import datetime, timezone
 import json
@@ -25,27 +26,12 @@ from django.db import DatabaseError
 import logging
 from django.db.models import Max
 
+import pytz
+
 channel_layer = get_channel_layer()
 
-
-def convert_special_types(obj):
-    """
-    Helper function that serializes Python dictionaries with nested non-serializable Python objects. 
-    It recursively traverses through a dictionary or list, and converts datetime to string via 
-    isoformat(), UUID to string, and Decimal to float.
-    """
-    if isinstance(obj, dict):
-        return {key: convert_special_types(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_special_types(item) for item in obj]
-    elif isinstance(obj, datetime):
-        return obj.isoformat()
-    elif isinstance(obj, UUID):
-        return str(obj)
-    elif isinstance(obj, Decimal):
-        return float(obj)
-    else:
-        return obj
+ov2xmp_logger = logging.getLogger('ov2xmp')
+ov2xmp_logger.setLevel(logging.DEBUG)
 
 
 async def broadcast_metervalues(message):
@@ -61,15 +47,15 @@ def authorize_idTag(id_token):
             if not idTag_object.revoked:
                 if idTag_object.expiry_date is not None:
                     if idTag_object.expiry_date.timestamp() > datetime.now(timezone.utc).timestamp():
-                        return {"status": ocpp_v16_enums.AuthorizationStatus.accepted.value}
+                        return {"status": AuthorizationStatus.accepted.value}
                     else:
-                        return {"status": ocpp_v16_enums.AuthorizationStatus.expired.value}
+                        return {"status": AuthorizationStatus.expired.value}
                 else:
-                    return {"status": ocpp_v16_enums.AuthorizationStatus.accepted.value}
+                    return {"status": AuthorizationStatus.accepted.value}
             else:
-                return {"status": ocpp_v16_enums.AuthorizationStatus.blocked.value}
+                return {"status": AuthorizationStatus.blocked.value}
         except idTagModel.DoesNotExist:
-            return {"status": ocpp_v16_enums.AuthorizationStatus.invalid.value}
+            return {"status": AuthorizationStatus.invalid.value}
     else:
         return {"status": None}
 
@@ -78,8 +64,8 @@ class ChargePoint16(cp):
     ##########################################################################################################################
     ###################  HANDLE INCOMING OCPP MESSAGES #######################################################################
     ##########################################################################################################################
-    @on(ocpp_v16_enums.Action.BootNotification)
-    def on_boot_notification(self, charge_point_model, charge_point_vendor, **kwargs):
+    @on(Action.boot_notification)
+    def on_boot_notification(self, charge_point_vendor:str, charge_point_model:str, **kwargs):
 
         charge_box_serial_number = kwargs.get('charge_box_serial_number', None) 
         charge_point_serial_number = kwargs.get('charge_point_serial_number', None)
@@ -96,11 +82,11 @@ class ChargePoint16(cp):
         return call_result.BootNotification(
             current_time=datetime.now(timezone.utc).isoformat(),
             interval=10,
-            status=ocpp_v16_enums.RegistrationStatus.accepted,
+            status=RegistrationStatus.accepted,
         )
     
 
-    @on(ocpp_v16_enums.Action.Heartbeat)
+    @on(Action.heartbeat)
     def on_heartbeat(self):
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
         current_cp.last_heartbeat = datetime.now(timezone.utc)
@@ -111,7 +97,7 @@ class ChargePoint16(cp):
         )
 
 
-    @on(ocpp_v16_enums.Action.StatusNotification)
+    @on(Action.status_notification)
     def on_status_notification(self, connector_id, error_code, status, **kwargs):
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
         if connector_id != 0:
@@ -146,13 +132,13 @@ class ChargePoint16(cp):
         return call_result.StatusNotification()
 
 
-    @on(ocpp_v16_enums.Action.Authorize)
+    @on(Action.authorize)
     def on_authorize(self, id_tag):
         result = authorize_idTag(id_tag)
         return call_result.Authorize(id_tag_info=result) # type: ignore
 
 
-    @on(ocpp_v16_enums.Action.StartTransaction)
+    @on(Action.start_transaction)
     def on_startTransaction(self, connector_id, id_tag, meter_start, timestamp, **kwargs):
 
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
@@ -167,7 +153,7 @@ class ChargePoint16(cp):
 
         result = authorize_idTag(id_tag)
         
-        if result["status"] == ocpp_v16_enums.AuthorizationStatus.accepted:
+        if result["status"] == AuthorizationStatus.accepted:
             new_transaction.id_tag = idTagModel.objects.get(idToken=id_tag)
             try:
                 new_transaction.connector = ConnectorModel.objects.filter(connectorid=connector_id, chargepoint=current_cp).get()
@@ -180,7 +166,7 @@ class ChargePoint16(cp):
                         _chargingprofile = ChargingprofileModel.objects.get(chargingprofile_id=_chargingprofile)
                         current_date = datetime.now()
                         if _chargingprofile.valid_from is not None and _chargingprofile.valid_to is not None:
-                            if not (_chargingprofile.valid_from < current_date and _chargingprofile.valid_to > current_date):
+                            if not (_chargingprofile.valid_from.replace(tzinfo=pytz.UTC) < current_date.replace(tzinfo=pytz.UTC) and _chargingprofile.valid_to.replace(tzinfo=pytz.UTC) > current_date.replace(tzinfo=pytz.UTC)):
                                 continue  # If valid_from and valid_to are set, but the chargingprofile is outside of the current date, then skip it
                         
                         if _chargingprofile.stack_level > max_stack_level:
@@ -188,15 +174,14 @@ class ChargePoint16(cp):
                             max_stack_level = _chargingprofile.stack_level
 
                     if selected_chargingprofile is not None:
-                        new_transaction.chargingprofile_applied = convert_special_types(selected_chargingprofile)
+                        new_transaction.chargingprofile_applied = convert_special_types(ChargingprofileSerializer(selected_chargingprofile).data)
                     else:
                         new_transaction.chargingprofile_applied = None
 
                 # Retrieve all the tariffs currently associated with the connector
                 tariff_queryset = new_transaction.connector.tariff_ids.all()
                 # Dump the tariff objects and save them as attribute of the transaction
-                tariff_list = list(tariff_queryset.values())
-                new_transaction.tariffs = convert_special_types(tariff_list)
+                new_transaction.tariffs = convert_special_types(TariffSerializerReadOnly(tariff_queryset, many=True).data)
 
             except ConnectorModel.DoesNotExist:
                 pass
@@ -218,7 +203,7 @@ class ChargePoint16(cp):
         )
 
 
-    @on(ocpp_v16_enums.Action.MeterValues)
+    @on(Action.meter_values)
     async def on_meterValues(self, connector_id, meter_value, **kwargs):
         transaction_id = kwargs.get('transaction_id', None)
         
@@ -269,7 +254,7 @@ class ChargePoint16(cp):
             return call_result.MeterValues()
 
 
-    @on(ocpp_v16_enums.Action.StopTransaction)
+    @on(Action.stop_transaction)
     def on_stopTransaction(self, meter_stop, timestamp, transaction_id, **kwargs): #reason, id_tag, transaction_data):
         
         try:
@@ -287,16 +272,17 @@ class ChargePoint16(cp):
             return call_result.StopTransaction()
         
         except DatabaseError as e:
-            logging.error("Connection error with Django DB. The transaction details for # " + str(transaction_id) + " have not been saved.")
+            ov2xmp_logger.error("Connection error with Django DB. The transaction details for # " + str(transaction_id) + " have not been saved.")
+            ov2xmp_logger.error(e)
             return call_result.StopTransaction()
 
 
-    @on(ocpp_v16_enums.Action.DiagnosticsStatusNotification)
+    @on(Action.diagnostics_status_notification)
     def on_DiagnosticsStatusNotification(self, status):
         return call_result.DiagnosticsStatusNotification()
     
     
-    @on(ocpp_v16_enums.Action.FirmwareStatusNotification)
+    @on(Action.firmware_status_notification)
     def on_FirmwareNotification(self):
         return call_result.FirmwareStatusNotification()
 
@@ -343,7 +329,7 @@ class ChargePoint16(cp):
         response = await self.call(request)
         if response is not None:
             # Create the reservation instance, if status accepted
-            if response.status == ocpp_v16_enums.ReservationStatus.accepted:
+            if response.status == ReservationStatus.accepted:
                 connector = ConnectorModel.objects.filter(chargepoint__chargepoint_id=self.id, connectorid=connector_id)
                 ReservationModel.objects.create(
                     connector=connector,
@@ -361,7 +347,7 @@ class ChargePoint16(cp):
         )
         response = await self.call(request)
         if response is not None:
-            if response.status == ocpp_v16_enums.ReservationStatus.accepted:
+            if response.status == ReservationStatus.accepted:
                 reservation_to_delete = ReservationModel.objects.filter(connector__chargepoint__chargepoint_id=self.id, reservation_id=reservation_id)
                 reservation_to_delete.delete()
             return response

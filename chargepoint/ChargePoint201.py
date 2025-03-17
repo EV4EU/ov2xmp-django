@@ -34,7 +34,7 @@ class ChargePoint201(cp):
     ###################  HANDLE INCOMING OCPP MESSAGES #######################################################################
     ##########################################################################################################################
 
-    @on(Action.BootNotification)
+    @on(Action.boot_notification)
     def on_boot_notification(self, charging_station, reason, **kwargs):
 
         charge_point_serial_number = charging_station.get("serial_number", None)
@@ -49,24 +49,24 @@ class ChargePoint201(cp):
             firmware_version = firmware_version
         ) 
 
-        return call_result.BootNotificationPayload(
+        return call_result.BootNotification(
             current_time=datetime.utcnow().isoformat(),
             interval=10,
-            status=ocpp_enums.RegistrationStatusType.accepted,
+            status=ocpp_enums.RegistrationStatusEnumType.accepted,
         )
     
 
-    @on(Action.Heartbeat)
+    @on(Action.heartbeat)
     def on_heartbeat(self):
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
         current_cp.last_heartbeat = timezone.now()
         current_cp.save()
-        return call_result.HeartbeatPayload(
+        return call_result.Heartbeat(
             current_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") + "Z"
         )
 
 
-    @on(Action.StatusNotification)
+    @on(Action.status_notification)
     def on_status_notification(self, timestamp, connector_status, evse_id, connector_id, **kwargs):
         
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
@@ -85,7 +85,7 @@ class ChargePoint201(cp):
             current_cp.chargepoint_status = connector_status
             current_cp.save()
         
-        return call_result.StatusNotificationPayload()
+        return call_result.StatusNotification()
 
     ##########################################################################################################################
     #################### ACTIONS INITIATED BY THE CSMS #######################################################################
@@ -93,7 +93,7 @@ class ChargePoint201(cp):
 
     # Reset
     async def reset(self, reset_type):
-        request = call.ResetPayload(type = reset_type)
+        request = call.Reset(type = reset_type)
         response = await self.call(request)
         if response is not None:
             return {"status": response.status}

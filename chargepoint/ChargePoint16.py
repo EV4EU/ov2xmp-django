@@ -273,7 +273,7 @@ class ChargePoint16(cp):
             result, cdr = create_cdr(transaction_id)  # type: ignore
             ov2xmp_logger.info(result)
 
-            if result["success"] and current_transaction.id_tag is not None:
+            if result["success"] and current_transaction.id_tag is not None and cdr is not None:
                 apply_cdr(cdr=cdr, user=current_transaction.id_tag.user)
 
             return call_result.StopTransaction()

@@ -112,7 +112,18 @@ def create_cdr(transaction_id):
 
             cdr.save()
 
-            return({"success": True, "message": "A new CDR has been created", "cdr_id": cdr.id, "transaction_id": transaction_id}, cdr)
+            msg = {"success": True, "message": "A new CDR has been created", "cdr_id": cdr.id, "transaction_id": transaction_id}
+
+            return(msg, cdr)
+        
+        else:
+            msg = {"success": False, "message": "No CDR was created because the tariff's array is empty.", "cdr_id": None, "transaction_id": None}
+            
+    else:
+        msg = {"success": False, "message": "No CDR was created because no connector or no tariff is associated with the transaction.", "cdr_id": None, "transaction_id": None}
+
+    return (msg, None)
+
 
 @shared_task()
 def apply_cdr(cdr: Cdr, user:User):

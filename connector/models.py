@@ -6,6 +6,42 @@ from ocpi.models import Tariff
 
 from django.contrib.postgres.fields import ArrayField  # Import ArrayField
 
+import datetime
+
+# This Function generates default time slots with values. For Tariff
+def default_tariff_history():
+    time_ranges = {}
+    for h in range(24):
+        for m in [0, 30]:
+            start_time = f"{h:02}:{m:02}"
+            end_hour = h if m == 0 else h + 1  # If 30, move to the next hour
+            end_minute = 30 if m == 0 else 0   # If 30, reset to 0
+            
+            # Fix the "24:00" issue
+            if end_hour == 24:
+                end_hour = 0  # Convert to "00"
+            
+            end_time = f"{end_hour:02}:{end_minute:02}"
+            time_ranges[f"{start_time}-{end_time}"] = 0.09
+    return time_ranges
+
+# This Function generates default time slots with values. For Capacity
+def default_capacity_history():
+    time_ranges = {}
+    for h in range(24):
+        for m in [0, 30]:
+            start_time = f"{h:02}:{m:02}"
+            end_hour = h if m == 0 else h + 1
+            end_minute = 30 if m == 0 else 0
+
+            # Fix the "24:00" issue
+            if end_hour == 24:
+                end_hour = 0  # Convert to "00"
+            
+            end_time = f"{end_hour:02}:{end_minute:02}"
+            time_ranges[f"{start_time}-{end_time}"] = 11
+    return time_ranges
+
 # this needs to be extended, according to OCPI
 class ConnectorType(models.TextChoices):
     CHADEMO = "CHADEMO"
@@ -47,6 +83,9 @@ class Connector(models.Model):
         blank=True,  
         default=list,  
     )
+
+    tariff_history = models.JSONField(default=default_tariff_history, blank=True)
+    capacity_history = models.JSONField(default=default_capacity_history, blank=True)
 
     def __str__(self):
         return "Connector " + str(self.connectorid) + " of " + self.chargepoint.chargepoint_id

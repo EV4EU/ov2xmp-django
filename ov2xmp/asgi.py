@@ -21,6 +21,7 @@ from transaction.MetervaluesConsumer import MetervaluesConsumer
 
 from users.UserConsumer import UsersConsumer
 from dso_rest.dso_consumers import DSOSignalConsumer
+from connector.ConnectorConsumer import ConnectorConsumer
 #from transformers.consumers import TransformerSignalConsumer
 
 
@@ -39,6 +40,9 @@ application = ProtocolTypeRouter({
                 path("ws/updates/metervalues/", MetervaluesConsumer.as_asgi()),
                 path("ws/updates/user/", UsersConsumer.as_asgi()),
                 path("ws/updates/dso_signal/", DSOSignalConsumer.as_asgi()),
+
+                path("ws/updates/connector/", ConnectorConsumer.as_asgi()),
+    
 
                 #path("ws/updates/transformer_signal/", TransformerSignalConsumer.as_asgi()), 
 

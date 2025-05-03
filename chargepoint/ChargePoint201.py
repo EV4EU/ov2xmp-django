@@ -11,8 +11,11 @@ from transaction.models import Transaction as TransactionModel
 from transaction.models import TransactionStatus
 from connector.models import Connector as ConnectorModel
 from reservation.models import Reservation as ReservationModel
+from statusnotification.models import Statusnotification as StatusnotificationModel
+from sampledvalue.models import Sampledvalue as SampledvalueModel
 
-import uuid
+from uuid import uuid4
+from datetime import datetime, timezone
 from django.utils import timezone
 from datetime import datetime
 import json
@@ -50,7 +53,7 @@ class ChargePoint201(cp):
         ) 
 
         return call_result.BootNotification(
-            current_time=datetime.utcnow().isoformat(),
+            current_time=datetime.now(timezone.utc).isoformat(),
             interval=10,
             status=ocpp_enums.RegistrationStatusEnumType.accepted,
         )
@@ -59,32 +62,46 @@ class ChargePoint201(cp):
     @on(Action.heartbeat)
     def on_heartbeat(self):
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
-        current_cp.last_heartbeat = timezone.now()
+        current_cp.last_heartbeat = datetime.now(timezone.utc)
         current_cp.save()
+
         return call_result.Heartbeat(
-            current_time=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+            current_time=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + "Z"
         )
 
 
     @on(Action.status_notification)
     def on_status_notification(self, timestamp, connector_status, evse_id, connector_id, **kwargs):
-        
         current_cp = ChargepointModel.objects.filter(pk=self.id).get()
         if connector_id != 0:
-            connector_to_update = ConnectorModel.objects.filter(chargepoint=current_cp, connectorid=connector_id)
-            if connector_to_update.exists():
-                connector_to_update.update(connector_status = connector_status)
-            else:
+            try:
+                connector_to_update = ConnectorModel.objects.filter(chargepoint=current_cp, connectorid=connector_id).get()
+                connector_to_update.connector_status = connector_status
+                connector_to_update.save()
+            except ConnectorModel.DoesNotExist:
+                connector_to_update = None
                 ConnectorModel.objects.create(
-                    uuid = uuid.uuid4(),
+                    uuid = uuid4(),
                     connectorid = connector_id,
                     connector_status = connector_status,
                     chargepoint = current_cp
                 )
-        else:
-            current_cp.chargepoint_status = connector_status
-            current_cp.save()
-        
+            else:
+                connector_to_update = None
+                current_cp.chargepoint_status = connector_status
+                current_cp.save()
+            
+        StatusnotificationModel.objects.create(
+            connector = connector_to_update,
+            chargepoint = current_cp,
+            error_code = kwargs.get('error_code', None),
+            info = kwargs.get('info', None),
+            status_reported = connector_status,
+            timestamp = kwargs.get('timestamp', datetime.now(timezone.utc)),
+            vendor_id = kwargs.get('vendor_id', None),
+            vendor_error_code = kwargs.get('vendor_error_code', None)
+        )
+
         return call_result.StatusNotification()
 
     ##########################################################################################################################

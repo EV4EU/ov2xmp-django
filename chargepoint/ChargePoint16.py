@@ -18,7 +18,6 @@ from api.helpers import convert_special_types
 from chargingprofile.models import Chargingprofile as ChargingprofileModel
 from chargingprofile.serializers import ChargingprofileSerializer
 from ocpi.serializers import TariffSerializerReadOnly
-from django.utils import timezone
 from datetime import datetime, timezone
 import json
 from channels.layers import get_channel_layer

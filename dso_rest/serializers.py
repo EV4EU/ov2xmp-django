@@ -1,16 +1,20 @@
 from rest_framework import serializers
 from dso_rest.classes import PeriodSerializerField
+from dso_rest.models import DsoSignal
 
-class DSOSignalSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    uuId = serializers.UUIDField()
-    uuName = serializers.ChoiceField(choices=['event_DUoSTarrif', 'event_CapacityLimit'])
-    transformerID = serializers.CharField()
-    event_timestamp = serializers.IntegerField()
-    locationCoords = serializers.ListField()
-    locationName = serializers.CharField()
-    duration = serializers.IntegerField()
+
+class DsoSignalSerializer(serializers.ModelSerializer):
+    sync = serializers.BooleanField(required=False, default=True)
+
     period = serializers.ListField(
         child=PeriodSerializerField()
     )
-    sync = serializers.BooleanField(default=True, required=False)
+    
+    def create(self, validated_data):
+        if "sync" in validated_data:
+            del validated_data["sync"]
+        return DsoSignal.objects.create(**validated_data)
+    
+    class Meta:
+        model = DsoSignal
+        fields = "__all__"

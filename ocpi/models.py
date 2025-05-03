@@ -7,6 +7,7 @@ from ocpi.classes import PriceComponent, TariffType, TariffRestrictions, Price, 
 from uuid import uuid4
 from idtag.models import IdTag
 from location.models import Location
+from dso_rest.models import DsoSignal
 
 
 OV2XMP_OCPI_COUNTRYCODE = os.environ.get("OV2XMP_OCPI_COUNTRYCODE", "GR")
@@ -47,6 +48,7 @@ class Tariff(models.Model):
     end_date_time = models.DateTimeField(null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
     elements = models.ManyToManyField(TariffElement)
+    dsosignal = models.ForeignKey(DsoSignal, on_delete=models.SET_NULL, default=None, null=True, blank=True)
 
 
 class Cdr(models.Model):

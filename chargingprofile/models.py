@@ -5,6 +5,7 @@ from uuid import uuid4
 from ov2xmp.validators import JSONSchemaValidator
 from chargingprofile.classes import ChargingSchedulePeriod
 from transaction.models import Transaction
+from dso_rest.models import DsoSignal
 
 
 class Chargingprofile(models.Model):
@@ -23,3 +24,8 @@ class Chargingprofile(models.Model):
     charging_rate_unit = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargingRateUnitType], default=enums_v16.ChargingRateUnitType.watts.value, max_length=1)
     chargingschedule_period = ArrayField(models.JSONField(validators=[JSONSchemaValidator(limit_value=ChargingSchedulePeriod.schema())]))
     min_charging_rate = models.DecimalField(default=None, null=True, max_digits=5, decimal_places=1, blank=True)
+    dsosignal = models.ForeignKey(DsoSignal, on_delete=models.SET_NULL, default=None, null=True, blank=True)
+
+
+#dso_signal = DsoSignal.objects.get(id=XXX)
+#my_charging_profiles = Chargingprofile.objects.filter(dsosignal=dso_signal)

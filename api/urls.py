@@ -12,7 +12,7 @@ from transaction.views import TransactionApiView, TransactionDetailApiView
 from sampledvalue.views import SampledvalueDetailApiView
 from users.views import UserApiView, UserDetailApiView, UserCreateApiView, MyTokenObtainPairView #, UserProfileDetailApiView
 from ocpi.views import TariffApiView, TariffDetailApiView, TariffElementApiView, TariffElementDetailApiView, CdrApiView, CdrDetailApiView
-from dso_rest.views import DSOSignalApiView
+from dso_rest.views import DsoSignalApiView, DsoSignalDetailApiView
 from mailsending.views import SendEmailView
 from users.views import RequestPasswordReset
 from users.views import ResetPassword
@@ -96,6 +96,8 @@ urlpatterns = [
     path('ocpp16/getlocallistversion/', Ocpp16GetLocalListVersionApiView.as_view()),
     path('ocpp16/sendlocallist/', Ocpp16SendLocalListApiView.as_view()),
 
-    path('dso/signal/', DSOSignalApiView.as_view()),
+    path('dso/signal/', DsoSignalApiView.as_view()),
+    path('dso/signal/<int:id>/', DsoSignalDetailApiView.as_view()),
+    
     path('mailsending/', SendEmailView.as_view(), name='mailsending'),
 ]

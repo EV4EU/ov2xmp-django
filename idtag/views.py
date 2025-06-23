@@ -1,9 +1,3 @@
-from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import IdTagForm
-from django.contrib.auth.decorators import login_required
 from idtag.models import IdTag
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from .models import IdTag

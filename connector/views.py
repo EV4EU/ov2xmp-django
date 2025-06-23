@@ -1,4 +1,4 @@
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from .models import Connector
 from .serializers import ConnectorSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication  
@@ -10,7 +10,6 @@ from django_filters.rest_framework import FilterSet, CharFilter
 #For the Tariff and Capacity History
 from rest_framework.response import Response
 from rest_framework import status
-from datetime import datetime
 from connector.helpers import *
 
 

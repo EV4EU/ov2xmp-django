@@ -1,11 +1,10 @@
 from django.shortcuts import render
 from ocpi.serializers import TariffSerializerReadOnly, TariffSerializerWriteOnly, TariffElementSerializer, CdrSerializer
-from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiRequest
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework_simplejwt.authentication import JWTAuthentication  
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, ListAPIView, UpdateAPIView, RetrieveDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveDestroyAPIView
 from ocpi.models import TariffElement, Tariff, Cdr
 
 

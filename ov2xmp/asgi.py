@@ -19,9 +19,9 @@ from tasks.TasksConsumer import TasksConsumer
 from tasks.CSMSConsumer import CSMSConsumer
 from transaction.MetervaluesConsumer import MetervaluesConsumer
 
-from users.UserConsumer import UsersConsumer
+from users.consumers import UsersConsumer
 from dso_rest.dso_consumers import DSOSignalConsumer
-from connector.ConnectorConsumer import ConnectorConsumer
+from connector.consumers import ConnectorConsumer
 #from transformers.consumers import TransformerSignalConsumer
 
 

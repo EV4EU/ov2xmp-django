@@ -152,44 +152,47 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class RequestPasswordReset(generics.GenericAPIView):
-    permission_classes = []
+class RequestPasswordReset(CreateAPIView):
+    authentication_classes = []
     serializer_class = ResetPasswordRequestSerializer
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        email = request.data['email']
-        user = User.objects.filter(email__iexact=email).first()
+        serializer = ResetPasswordRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.data['email']
+            user = User.objects.filter(email__iexact=email).first()
 
-        if user:
-            token_generator = PasswordResetTokenGenerator()
-            token = token_generator.make_token(user) 
-            reset = PasswordReset(email=email, token=token)
-            reset.save()
+            if user:
+                token_generator = PasswordResetTokenGenerator()
+                token = token_generator.make_token(user) 
+                reset = PasswordReset(email=email, token=token)
+                reset.save()
 
-            reset_url = "https://ov2xmp.trsc-ppc.gr/ui/password-reset/" + token
+                reset_url = "https://ov2xmp.rid-ppcinspectra.com/ui/password-reset/" + token
 
-            send_mail(
-                "[O-V2X-MP] Password Reset Instructions",
-                "Please use the following URL to reset your password: " + reset_url,
-                settings.EMAIL_HOST_USER,   # From address (your Gmail)
-                [user.email],               # To address
-                fail_silently=False,        # Set to True if you want to silently handle errors
-            )
+                send_mail(
+                    "[O-V2X-MP] Password Reset Instructions",
+                    "Please use the following URL to reset your password: " + reset_url,
+                    settings.EMAIL_HOST_USER,   # From address (your Gmail)
+                    [user.email],               # To address
+                    fail_silently=False,        # Set to True if you want to silently handle errors
+                )
 
-            return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
+                return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "User with credentials not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response({"error": "User with credentials not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ResetPassword(generics.GenericAPIView):
-    permission_classes = []
+class ResetPassword(CreateAPIView):
+    authentication_classes = []
     serializer_class = ResetPasswordSerializer
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
+        data = serializer.data
         
         new_password = data['new_password']
         confirm_password = data['confirm_password']

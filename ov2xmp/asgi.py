@@ -17,7 +17,7 @@ from django.urls import path, re_path
 from channels.security.websocket import AllowedHostsOriginValidator
 from tasks.TasksConsumer import TasksConsumer
 from tasks.CSMSConsumer import CSMSConsumer
-from transaction.MetervaluesConsumer import MetervaluesConsumer
+from transaction.consumers import MetervaluesConsumer
 
 from users.consumers import UsersConsumer
 from dso_rest.dso_consumers import DSOSignalConsumer

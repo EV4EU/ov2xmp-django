@@ -14,9 +14,9 @@ from statusnotification.models import Statusnotification as StatusnotificationMo
 from sampledvalue.models import Sampledvalue as SampledvalueModel
 
 from uuid import uuid4
-from api.helpers import convert_special_types
-from chargingprofile.models import Chargingprofile as ChargingprofileModel
-from chargingprofile.serializers import ChargingprofileSerializer
+from ov2xmp.helpers import convert_special_types
+from chargingprofile.models import Chargingprofile16 as ChargingprofileModel
+from chargingprofile.serializers import Chargingprofile16Serializer as ChargingprofileSerializer
 from ocpi.serializers import TariffSerializerReadOnly
 from datetime import datetime, timezone
 import json

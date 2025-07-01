@@ -13,7 +13,7 @@ class TransactionStatus(models.TextChoices):
     
 class Transaction(models.Model):
     transaction_id = models.AutoField(primary_key=True)
-    uuid = models.UUIDField(default=uuid4, editable=False)
+    uuid = models.UUIDField(default=None, null=True, unique=True)
     connector = models.ForeignKey(Connector, on_delete=models.SET_NULL, default=None, null=True)
     start_transaction_timestamp = models.DateTimeField()
     stop_transaction_timestamp = models.DateTimeField(null=True)

@@ -1,7 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from decimal import Decimal
 from pydantic.main import BaseModel
+from enum import Enum
+
+def get_current_utc_string_without_timezone_offset():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")[:-3] + "Z"
 
 
 def convert_special_types(obj):
@@ -24,3 +28,15 @@ def convert_special_types(obj):
         return obj.dict()
     else:
         return obj
+
+
+class CSMS_MESSAGE_CODE(Enum):
+    CHARGING_STATION_DOES_NOT_EXIST = "Charging Station does not exist"
+    CHARGING_PROFILE_DOES_NOT_EXIST = "Charging Profile does not exist"
+    RESPONSE_RECEIVED = 200
+    TASK_SUBMITTED = "Task has been submitted successfully"
+
+
+class MESSAGE_CODE(Enum):
+    RESPONSE_RECEIVED = 200
+    TASK_SUBMITTED = "Task has been submitted successfully"

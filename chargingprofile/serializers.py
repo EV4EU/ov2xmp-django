@@ -1,11 +1,36 @@
 from rest_framework import serializers
-from .models import Chargingprofile
-from chargingprofile.classes import ChargingSchedulePeriodSerializerField
+from chargingprofile.classes import ChargingSchedulePeriod16SerializerField
 from rest_framework.serializers import ListField
+from .models import Chargingprofile16, Chargingprofile201
+from ocpp.v201 import enums as ocpp201_enums
 
 
-class ChargingprofileSerializer(serializers.ModelSerializer):
-    chargingschedule_period = ListField(child=ChargingSchedulePeriodSerializerField())
+class Chargingprofile16Serializer(serializers.ModelSerializer):
+    chargingschedule_period = ListField(child=ChargingSchedulePeriod16SerializerField())
     class Meta:
-        model = Chargingprofile
+        model = Chargingprofile16
+        fields = "__all__"
+
+##################################################################################################
+
+class ChargingSchedulePeriod201SerializerField(serializers.Serializer):
+    startPeriod = serializers.IntegerField()
+    limit = serializers.FloatField()
+    number_phases = serializers.IntegerField(required=False)
+    phase_to_use = serializers.IntegerField(required=False)
+
+
+class ChargingSchedule201SerializerField(serializers.Serializer):
+    id = serializers.IntegerField()
+    start_schedule = serializers.DateTimeField(required=False)
+    duration = serializers.IntegerField()
+    charging_rate_unit = serializers.ChoiceField(choices=ocpp201_enums.ChargingRateUnitEnumType) 
+    min_charging_rate = serializers.FloatField()
+    charging_schedule_period = serializers.ListField(child=ChargingSchedulePeriod201SerializerField())
+    
+
+class Chargingprofile201Serializer(serializers.ModelSerializer):
+    charging_schedule = ListField(child=ChargingSchedule201SerializerField())
+    class Meta:
+        model = Chargingprofile201
         fields = "__all__"

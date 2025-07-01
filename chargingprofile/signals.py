@@ -1,12 +1,12 @@
 from django.db.models.signals import post_save, post_delete
 from django.contrib.auth.models import User
 from django.dispatch import receiver
-from chargingprofile.models import Chargingprofile
+from chargingprofile.models import Chargingprofile16
 from connector.models import Connector
 from ocpp_rest.tasks import ocpp16_set_charging_profile_task
 
 
-@receiver(post_save, sender=Chargingprofile)
+@receiver(post_save, sender=Chargingprofile16)
 def update_chargingprofile_on_connector(sender, instance, created, **kwargs):
     # Search connectors that have this chargingprofile
     this_chargingprofile_id = instance.chargingprofile_id

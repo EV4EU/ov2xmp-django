@@ -4,11 +4,13 @@ import django
 django.setup()
 from django.conf import settings
 from chargepoint.models import Chargepoint as ChargepointModel
-from chargingprofile.models import Chargingprofile as ChargingprofileModel
+from chargingprofile.models import Chargingprofile16 as Chargingprofile16Model
+from chargingprofile.models import Chargingprofile201 as Chargingprofile201Model
+from chargingprofile.serializers import Chargingprofile201Serializer
 from chargepoint.models import OcppProtocols
 from ocpp.v16.enums import ChargePointStatus
 from chargepoint.ChargePoint16 import ChargePoint16
-from api.serializers import CSMS_MESSAGE_CODE
+from ov2xmp.helpers import CSMS_MESSAGE_CODE
 from chargepoint.ChargePoint201 import ChargePoint201
 
 import asyncio
@@ -86,7 +88,7 @@ async def remote_start_transaction(request: Request, chargepoint_id: str):
         return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
 
 
-# RemoteStopTransaction  
+# RemoteStopTransaction 
 @app.route("/ocpp16/remotestoptransaction/<chargepoint_id:str>", methods=["POST"])
 async def remote_stop_transaction(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
@@ -215,7 +217,7 @@ async def set_charging_profile(request: Request, chargepoint_id: str):
         connector_id = request.json["connector_id"]
         charging_profile_id = request.json["charging_profile_id"]
         try:
-            chargingprofile_object = ChargingprofileModel.objects.get(pk=charging_profile_id)
+            chargingprofile_object = Chargingprofile16Model.objects.get(pk=charging_profile_id)
             chargingprofile = {
                 "chargingProfileId": chargingprofile_object.chargingprofile_id,
                 "stackLevel": chargingprofile_object.stack_level,
@@ -251,7 +253,7 @@ async def set_charging_profile(request: Request, chargepoint_id: str):
 
             result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].set_charging_profile(connector_id, chargingprofile)
             return json_ocpp(result)
-        except ChargingprofileModel.DoesNotExist:
+        except Chargingprofile16Model.DoesNotExist:
             return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_PROFILE_DOES_NOT_EXIST)
     else:
         return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
@@ -324,28 +326,155 @@ async def send_local_list(request: Request, chargepoint_id: str):
 ############################ CSMS REST API - OCPP 2.0.1 ###########################################
 ###################################################################################################
 
-#ReserveNow - OCPP 2.0.1
-@app.route("/ocpp201/reservenow/<chargepoint_id:str>", methods=["POST"])
-async def ocpp201_reserve_now(request: Request, chargepoint_id: str):
-    pass
+# Reset
+@app.route("/ocpp201/reset/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_reset(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        reset_type = request.json["reset_type"]
+        evse_id = request.json["evse_id"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].reset(reset_type, evse_id)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
 
 
-#CancelReservation - OCPP 2.0.1
-@app.route("/ocpp201/cancelreservation/<chargepoint_id:str>", methods=["POST"])
-async def ocpp201_cancel_reservation(request: Request, chargepoint_id: str):
-    pass
+# ChangeAvailability
+@app.route("/ocpp201/changeavailability/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_change_availability(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        operational_status = request.json["operational_status"]
+        evse_id = request.json["evse_id"]
+        connector_id = request.json["connector_id"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].change_availability(operational_status, evse_id, connector_id)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+    
+
+# ClearCache
+@app.route("/ocpp201/clearcache/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_clear_cache(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].clear_cache()
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
 
 
-#GetCompositeSchedule - OCPP 2.0.1
-@app.route("/ocpp201/getcompositeschedule/<chargepoint_id:str>", methods=["POST"])
-async def ocpp201_get_composite_schedule(request: Request, chargepoint_id: str):
-    pass
+# ClearChargingProfile
+@app.route("/ocpp201/clearchargingprofile/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_clear_charging_profile(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        charging_profile_id = request.json["charging_profile_id"]
+        charging_profile_criteria = request.json["charging_profile_criteria"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].clear_charging_profile(charging_profile_id, charging_profile_criteria)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
 
 
-#SetChargingProfile - OCPP 2.0.1
+# ClearDisplayMessage
+@app.route("/ocpp201/cleardisplaymessage/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_clear_display_message(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        id = request.json["id"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].clear_display_message(id)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# GetChargingProfiles
+@app.route("/ocpp201/getchargingprofiles/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_get_charging_profile(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        request_id = request.json["request_id"]
+        evse_id = request.json["evse_id"]
+        charging_profile = request.json["charging_profile"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].get_charging_profiles(request_id, evse_id, charging_profile)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# GetDisplayMessages
+@app.route("/ocpp201/getdisplaymessages/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_get_display_messages(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        request_id = request.json["request_id"]
+        id = request.json["id"]
+        priority = request.json["priority"]
+        state = request.json["state"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].get_display_messages(request_id, id, priority, state)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# RequestStartTransaction
+@app.route("/ocpp201/requeststarttransaction/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_request_start_transaction(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        id_token = request.json["id_token"]
+        evse_id = request.json["evse_id"]
+        charging_profile_id = request.json["charging_profile_id"]
+        remote_start_id = request.json["remote_start_id"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].request_start_transaction(id_token, evse_id, remote_start_id, charging_profile_id)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# RequestStopTransaction
+@app.route("/ocpp201/requeststoptransaction/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_request_stop_transaction(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        transaction_id = request.json["transaction_id"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].request_stop_transaction(transaction_id)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# SetChargingProfile
 @app.route("/ocpp201/setchargingprofile/<chargepoint_id:str>", methods=["POST"])
 async def ocpp201_set_charging_profile(request: Request, chargepoint_id: str):
-    pass
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        evse_id = request.json["evse_id"]
+        charging_profile_id = request.json["charging_profile_id"]
+        try:
+            chargingprofile_object = Chargingprofile201Model.objects.get(pk=charging_profile_id)
+            charging_profile = Chargingprofile201Serializer(chargingprofile_object)
+            result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].set_charging_profile(evse_id, charging_profile)
+            return json_ocpp(result)
+        except Chargingprofile201Model.DoesNotExist:
+            return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_PROFILE_DOES_NOT_EXIST)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# SetDisplayMessage
+@app.route("/ocpp201/setdisplaymessage/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_set_display_message(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        message = request.json["message"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].set_display_message(message)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
+
+# UnlockConnector
+@app.route("/ocpp201/unlockconnector/<chargepoint_id:str>", methods=["POST"])
+async def ocpp201_unlock_connector(request: Request, chargepoint_id: str):
+    if chargepoint_id in app.ctx.CHARGEPOINTS_V201 and request.json is not None:
+        evse_id = request.json["evse_id"]
+        connector_id = request.json["connector_id"]
+        result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].unlock_connector(evse_id, connector_id)
+        return json_ocpp(result)
+    else:
+        return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
+
 
 ###################################################################################################
 ################################## Websocket Handler ##############################################

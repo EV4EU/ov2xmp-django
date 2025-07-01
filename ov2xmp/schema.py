@@ -1,6 +1,6 @@
 from drf_spectacular.extensions import OpenApiSerializerFieldExtension
 from ocpi.classes import PriceComponent, TariffRestrictions, Price, DisplayText, ManyToManyWriteOnlyField
-from chargingprofile.classes import ChargingSchedulePeriod
+from chargingprofile.classes import ChargingSchedulePeriod16
 from location.classes import GeoLocation
 from dso_rest.classes import Period
 
@@ -35,11 +35,11 @@ class ManyToManyFieldExtension(OpenApiSerializerFieldExtension):
         return ManyToManyWriteOnlyField.schema()
 
 
-class ChargingSchedulePeriodFieldExtension(OpenApiSerializerFieldExtension):
-    target_class = "chargingprofile.classes.ChargingSchedulePeriodSerializerField"
+class ChargingSchedulePeriod16FieldExtension(OpenApiSerializerFieldExtension):
+    target_class = "chargingprofile.classes.ChargingSchedulePeriod16SerializerField"
     def map_serializer_field(self, auto_schema, direction):
-        return ChargingSchedulePeriod.schema()
-    
+        return ChargingSchedulePeriod16.schema()
+
 
 class GeoLocationFieldExtension(OpenApiSerializerFieldExtension):
     target_class = "location.classes.GeoLocationSerializerField"

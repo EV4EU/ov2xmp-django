@@ -147,14 +147,87 @@ def ocpp16_send_local_list_task(chargepoint_id, list_version, local_authorizatio
     return message
 
 
-'''
+###################################################################################################################################
+
 @shared_task()
-def dummy_task(param1, param2):
-    time.sleep(5)
-    message = {
-        "success": True,
-        "message": "Task completed",
-    }
+def ocpp201_reset(chargepoint_id, reset_type, evse_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/reset/" + chargepoint_id, json={"reset_type": reset_type, "evse_id": evse_id}).json()
     send_task_update(message)
     return message
-'''
+
+
+@shared_task()
+def ocpp201_change_availability(chargepoint_id, operational_status, evse_id, connector_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/changeavailability/" + chargepoint_id, json={"operational_status": operational_status, "evse_id": evse_id, "connector_id": connector_id}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_clear_cache(chargepoint_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/clearcache/" + chargepoint_id).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_clear_charging_profile(chargepoint_id, charging_profile_id, charging_profile_criteria):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/clearchargingprofile/" + chargepoint_id, json={"charging_profile_id": charging_profile_id, "charging_profile_criteria": charging_profile_criteria}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_clear_display_message(chargepoint_id, id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/cleardisplaymessage/" + chargepoint_id, json={"id": id}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_get_charging_profile(chargepoint_id, request_id, evse_id, charging_profile):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/getchargingprofiles/" + chargepoint_id, json={"request_id": request_id, "evse_id": evse_id, "charging_profile": charging_profile}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_get_display_messages(chargepoint_id, request_id, id, priority, state):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/getdisplaymessages/" + chargepoint_id, json={"request_id": request_id, "id": id, "priority": priority, "state": state}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_request_start_transaction(chargepoint_id, id_token, evse_id, remote_start_id, charging_profile_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/requeststarttransaction/" + chargepoint_id, json={"id_token": id_token, "evse_id": evse_id, "remote_start_id": remote_start_id, "charging_profile_id": charging_profile_id}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_request_stop_transaction(chargepoint_id, transaction_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/requeststoptransaction/" + chargepoint_id, json={"transaction_id": transaction_id}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_set_charging_profile(chargepoint_id, evse_id, charging_profile_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/setchargingprofile/" + chargepoint_id, json={"evse_id": evse_id, "charging_profile_id": charging_profile_id}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_set_display_message(chargepoint_id, message):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/setdisplaymessage/" + chargepoint_id, json={"message": message}).json()
+    send_task_update(message)
+    return message
+
+
+@shared_task()
+def ocpp201_unlock_connector(chargepoint_id, evse_id, connector_id):
+    message = requests.post("http://" + csms_hostname + ":9000/ocpp201/unlockconnector/" + chargepoint_id, json={"evse_id": evse_id, "connector_id": connector_id}).json()
+    send_task_update(message)
+    return message

@@ -1,12 +1,9 @@
 from django.db import models
 from chargepoint.models import Chargepoint
-from ocpp.v16 import enums as enums_v16
 from uuid import uuid4
 from ocpi.models import Tariff
-
 from django.contrib.postgres.fields import ArrayField  # Import ArrayField
 
-import datetime
 
 # This Function generates default time slots with values. For Tariff
 def default_tariff_history():
@@ -60,12 +57,12 @@ class PowerType(models.TextChoices):
     AC_3_PHASE = "AC_3_PHASE"
     DC = "DC"
 
-# Create your models here.
+
 class Connector(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     connectorid = models.IntegerField()
-    availability_status = models.CharField(choices=[(i.value, i.value) for i in enums_v16.AvailabilityType], default=enums_v16.AvailabilityType.operative.value, max_length=11)
-    connector_status = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargePointStatus], default=enums_v16.ChargePointStatus.available.value, max_length=13)
+    availability_status = models.CharField(default=None, null=True, blank=True, max_length=13)
+    connector_status = models.CharField(default=None, null=True, blank=True, max_length=13)
     chargepoint = models.ForeignKey(Chargepoint, on_delete=models.CASCADE)
 
     standard = models.CharField(max_length=255, choices=ConnectorType.choices, null=True, default=None, blank=True)
@@ -86,6 +83,7 @@ class Connector(models.Model):
 
     tariff_history = models.JSONField(default=default_tariff_history, blank=True)
     capacity_history = models.JSONField(default=default_capacity_history, blank=True)
-
+    evse_id = models.IntegerField(default=0)
+    
     def __str__(self):
         return "Connector " + str(self.connectorid) + " of " + self.chargepoint.chargepoint_id

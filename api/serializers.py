@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from enum import Enum
 
 
 class RelatedFieldAlternative(serializers.PrimaryKeyRelatedField):
@@ -20,10 +19,3 @@ class RelatedFieldAlternative(serializers.PrimaryKeyRelatedField):
         if self.serializer:
             return self.serializer(instance, context=self.context).data
         return super().to_representation(instance)
-
-
-class CSMS_MESSAGE_CODE(Enum):
-    CHARGING_STATION_DOES_NOT_EXIST = "Charging Station does not exist"
-    CHARGING_PROFILE_DOES_NOT_EXIST = "Charging Profile does not exist"
-    RESPONSE_RECEIVED = 200
-    TASK_SUBMITTED = "Task has been submitted successfully"

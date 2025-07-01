@@ -3,8 +3,7 @@ from transaction.models import Transaction
 from ocpi.classes import AuthMethod, Price, ChargingPeriod, CdrDimension, CdrDimensionType
 import logging
 from celery import shared_task
-from api.serializers import CSMS_MESSAGE_CODE
-from api.helpers import convert_special_types
+from ov2xmp.helpers import convert_special_types
 from users.models import User, Profile
 
 ov2xmp_logger = logging.getLogger('ov2xmp')
@@ -14,7 +13,11 @@ ov2xmp_logger.setLevel(logging.DEBUG)
 @shared_task()
 def create_cdr(transaction_id):
 
-    transaction = Transaction.objects.get(transaction_id=transaction_id)
+    if type(transaction_id) is int:
+        transaction = Transaction.objects.get(transaction_id=transaction_id)
+    else:
+        transaction = Transaction.objects.get(uuid=transaction_id)
+        
     ov2xmp_logger.info({"message": "Creating CDR for <transaction_id: " + str(transaction_id) + ">"})
 
     if transaction.connector is not None and transaction.tariffs is not None:

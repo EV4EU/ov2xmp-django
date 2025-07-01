@@ -15,8 +15,8 @@ import os
 from django.contrib.messages import constants as messages
 from datetime import timedelta
 from ocpp.v16 import enums as enums_v16
+from ocpp.v201 import enums as enums_v201
 from zoneinfo import available_timezones
-from enum import Enum
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -256,9 +256,9 @@ SPECTACULAR_SETTINGS = {
         'ChargingRateUnitTypeEnum': [(i.value, i.value) for i in enums_v16.ChargingRateUnitType], # type: ignore
         'TimezoneEnum': [(i, i) for i in available_timezones()],
         'StatusReportedEnum': [(i.value, i.value) for i in enums_v16.ChargePointStatus],
-        'ChargepointSocketsEnum': 'connector.models.ConnectorType.choices'
+        'ChargepointSocketsEnum': 'connector.models.ConnectorType.choices',
+        'ChargingRateUnitEnumType': [(i.value, i.value) for i in enums_v201.ChargingRateUnitEnumType], # type: ignore
     }
-    # OTHER SETTINGS
 }
 
 

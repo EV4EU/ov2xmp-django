@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='chargingprofile',
             name='chargingschedule_period',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.JSONField(validators=[ov2xmp.validators.JSONSchemaValidator(limit_value=chargingprofile.models.ChargingSchedulePeriod)]), size=None),
+            field=django.contrib.postgres.fields.ArrayField(base_field=models.JSONField(validators=[ov2xmp.validators.JSONSchemaValidator(limit_value=chargingprofile.models.ChargingSchedulePeriod16)]), size=None),
         ),
     ]

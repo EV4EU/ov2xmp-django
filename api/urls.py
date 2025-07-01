@@ -1,13 +1,14 @@
 from django.urls import path, include
 from chargepoint.views import ChargepointApiView, ChargepointDetailApiView
 from connector.views import ConnectorApiView, ConnectorDetailApiView
-from chargingprofile.views import ChargingprofileApiView, ChargingprofileDetailApiView
+from chargingprofile.views import Chargingprofile16ApiView, Chargingprofile16DetailApiView
+from chargingprofile.views import Chargingprofile201ApiView, Chargingprofile201DetailApiView
 from idtag.views import IdtagApiView, IdtagDetailApiView
 from tasks.views import TasksApiView, TasksDetailApiView
 from ocpp_rest.views import *
 from location.views import LocationApiView, LocationDetailApiView
 from reservation.views import ReservationApiView, ReservationDetailApiView
-from statusnotification.views import StatusnotificationDetailApiView
+from statusnotification.views import StatusnotificationDetailApiView, Statusnotification201DetailApiView
 from transaction.views import TransactionApiView, TransactionDetailApiView
 from sampledvalue.views import SampledvalueDetailApiView
 from users.views import UserApiView, UserDetailApiView, UserCreateApiView, MyTokenObtainPairView #, UserProfileDetailApiView
@@ -40,8 +41,11 @@ urlpatterns = [
     path('connector/', ConnectorApiView.as_view()),
     path('connector/<str:uuid>/', ConnectorDetailApiView.as_view()),
 
-    path('chargingprofile/', ChargingprofileApiView.as_view()),
-    path('chargingprofile/<str:chargingprofile_id>/', ChargingprofileDetailApiView.as_view()),
+    path('chargingprofile16/', Chargingprofile16ApiView.as_view()),
+    path('chargingprofile16/<str:chargingprofile_id>/', Chargingprofile16DetailApiView.as_view()),
+
+    path('chargingprofile201/', Chargingprofile201ApiView.as_view()),
+    path('chargingprofile201/<str:chargingprofile_id>/', Chargingprofile201DetailApiView.as_view()),
 
     path('user/create/', UserCreateApiView.as_view()),
     path('user/', UserApiView.as_view()),
@@ -76,7 +80,8 @@ urlpatterns = [
     path('sampledvalue/<str:transaction_id>/', SampledvalueDetailApiView.as_view()),
 
     path('statusnotification/<str:chargepoint_id>/', StatusnotificationDetailApiView.as_view()),
-
+    path('statusnotification201/<str:chargepoint_id>/', Statusnotification201DetailApiView.as_view()),
+    
     path('ocpp16/reset/', Ocpp16ResetApiView.as_view()),
     path('ocpp16/remotestarttransaction/', Ocpp16RemoteStartTrasactionApiView.as_view()),
     path('ocpp16/remotestoptransaction/', Ocpp16RemoteStopTrasactionApiView.as_view()),
@@ -95,6 +100,19 @@ urlpatterns = [
     path('ocpp16/triggermessage/', Ocpp16TriggerMessageApiView.as_view()),
     path('ocpp16/getlocallistversion/', Ocpp16GetLocalListVersionApiView.as_view()),
     path('ocpp16/sendlocallist/', Ocpp16SendLocalListApiView.as_view()),
+
+    path('ocpp201/reset/', Ocpp201ResetApiView.as_view()),
+    path('ocpp201/changeavailability/', Ocpp201ChangeAvailabilityApiView.as_view()),
+    path('ocpp201/clearcache/', Ocpp201ClearCacheApiView.as_view()),
+    path('ocpp201/clearchargingprofile/', Ocpp201ClearChargingProfileApiView.as_view()),
+    path('ocpp201/cleardisplaymessage/', Ocpp201ClearDisplayMessageApiView.as_view()),
+    path('ocpp201/getchargingprofiles/', Ocpp201GetChargingProfilesApiView.as_view()),
+    path('ocpp201/getdisplaymessages/', Ocpp201GetDisplayMessagesApiView.as_view()),
+    path('ocpp201/requeststarttransaction/', Ocpp201RequestStartTransactionApiView.as_view()),
+    path('ocpp201/requeststoptransaction/', Ocpp201RequestStopTransactionApiView.as_view()),
+    path('ocpp201/setchargingprofile/', Ocpp201SetChargingProfileApiView.as_view()),
+    path('ocpp201/setdisplaymessage/', Ocpp201SetDisplayMessageApiView.as_view()),
+    path('ocpp201/unlockconnector/', Ocpp201UnlockConnectorApiView.as_view()),
 
     path('dso/signal/', DsoSignalApiView.as_view()),
     path('dso/signal/<int:id>/', DsoSignalDetailApiView.as_view()),

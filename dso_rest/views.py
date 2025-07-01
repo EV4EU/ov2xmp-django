@@ -1,17 +1,12 @@
-from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from dso_rest.serializers import DsoSignalSerializer
 from dso_rest.tasks import *
 from rest_framework_simplejwt.authentication import JWTAuthentication  
-from enum import Enum
+from ov2xmp.helpers import MESSAGE_CODE
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-
-
-class MESSAGE_CODE(Enum):
-    RESPONSE_RECEIVED = 200
-    TASK_SUBMITTED = "Task has been submitted successfully"
 
 
 @extend_schema_view(

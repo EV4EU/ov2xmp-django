@@ -7,6 +7,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from ov2xmp.helpers import MESSAGE_CODE
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from dso_rest.models import DsoSignal
 
 
 @extend_schema_view(

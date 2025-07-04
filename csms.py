@@ -526,7 +526,7 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
         await ChargepointModel.objects.acreate(chargepoint_id = charge_point_id, 
                                                 ocpp_version=ocpp_version,
                                                 chargepoint_status=ChargePointStatus.available.value,  # type: ignore
-                                                ip_address=request.ip,
+                                                ip_address=request.client_ip,
                                                 websocket_port=request.port)
     else:
         await new_chargepoint.aupdate(connected=True, chargepoint_status=ChargePointStatus.available.value) # type: ignore

@@ -29,6 +29,7 @@ app.ctx.CHARGEPOINTS_V16 = {}
 app.ctx.CHARGEPOINTS_V201 = {}
 app.config.FALLBACK_ERROR_FORMAT = "json"
 app.config.WEBSOCKET_PING_INTERVAL = 0  # Disable Websocket ping/pong, since some EV chargers do not respond to pings.
+app.config.PROXIES_COUNT = 1
 
 from logstash_async.handler import AsynchronousLogstashHandler
 
@@ -505,7 +506,7 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
     # For every new charge point that connects, create a ChargePoint instance and start listening for messages.
      
     logger.info("Protocols Matched: %s", websocket.subprotocol)
-    logger.info("Charge Point connected: %s, from: %s", charge_point_id, request.ip)
+    logger.info("Charge Point connected: %s, from: %s", charge_point_id, request.client_ip)
 
     if websocket.subprotocol == 'ocpp1.6':
         cp = ChargePoint16(charge_point_id, websocket, response_timeout=OV2XMP_OCPP_TIMEOUT)

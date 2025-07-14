@@ -14,7 +14,7 @@ class Chargingprofile16Serializer(serializers.ModelSerializer):
 ##################################################################################################
 
 class ChargingSchedulePeriod201SerializerField(serializers.Serializer):
-    startPeriod = serializers.IntegerField()
+    start_period = serializers.IntegerField()
     limit = serializers.FloatField()
     number_phases = serializers.IntegerField(required=False)
     phase_to_use = serializers.IntegerField(required=False)
@@ -22,7 +22,7 @@ class ChargingSchedulePeriod201SerializerField(serializers.Serializer):
 
 class ChargingSchedule201SerializerField(serializers.Serializer):
     id = serializers.IntegerField()
-    start_schedule = serializers.DateTimeField(required=False)
+    start_schedule = serializers.CharField(required=False)  #TODO: This should be DateTimeField, but the serializer converts it to Datetime object, which causes error when saving the model, because the charging_schedule is a JSON string in the db.
     duration = serializers.IntegerField()
     charging_rate_unit = serializers.ChoiceField(choices=ocpp201_enums.ChargingRateUnitEnumType) 
     min_charging_rate = serializers.FloatField()

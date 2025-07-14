@@ -445,8 +445,7 @@ async def ocpp201_set_charging_profile(request: Request, chargepoint_id: str):
         charging_profile_id = request.json["charging_profile_id"]
         try:
             chargingprofile_object = Chargingprofile201Model.objects.get(pk=charging_profile_id)
-            charging_profile = Chargingprofile201Serializer(chargingprofile_object)
-            result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].set_charging_profile(evse_id, charging_profile)
+            result = await app.ctx.CHARGEPOINTS_V201[chargepoint_id].set_charging_profile(evse_id, chargingprofile_object)
             return json_ocpp(result)
         except Chargingprofile201Model.DoesNotExist:
             return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_PROFILE_DOES_NOT_EXIST)

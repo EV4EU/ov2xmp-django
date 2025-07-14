@@ -11,11 +11,9 @@ from users.models import Profile as ProfileModel
 from transaction.models import Transaction as TransactionModel
 from transaction.models import TransactionStatus
 from connector.models import Connector as ConnectorModel
-from reservation.models import Reservation as ReservationModel
 from statusnotification.models import Statusnotification201 as StatusnotificationModel
 from sampledvalue.models import Sampledvalue as SampledvalueModel
 from chargingprofile.models import Chargingprofile201 as Chargingprofile201Model
-from chargingprofile.serializers import Chargingprofile201Serializer
 
 
 import uuid
@@ -25,7 +23,7 @@ from channels.layers import get_channel_layer
 import logging
 from django.core.exceptions import ObjectDoesNotExist
 from ocpi.tasks import create_cdr, apply_cdr
-from ov2xmp.helpers import get_current_utc_string_without_timezone_offset
+from ov2xmp.helpers import get_current_utc_string_without_timezone_offset, convert_datetime_to_string_without_timezone_offset
 from dateutil import parser
 
 channel_layer = get_channel_layer()
@@ -78,6 +76,61 @@ def get_meter_value_last(meter_value):
     return 0,"0"
 ###########################################################################################
 
+def chargingprofile201model_to_chargingprofile201type(chargingprofile201_obj: Chargingprofile201Model):
+    """
+    This function converts the Chargingprofile201 Django model to a ChargingProfileType OCPP object, so it can be sent to an EVCS.
+    """
+    charging_schedule_list = chargingprofile201_obj.charging_schedule
+    charging_schedule_list_ocppType = list()
+
+    for charging_schedule in charging_schedule_list:
+        charging_schedule_period_list_dict = charging_schedule["charging_schedule_period"]
+        charging_schedule_period_list_ocppType = list()
+
+        for charging_schedule_period_dict in charging_schedule_period_list_dict:
+            charging_schedule_period_list_ocppType.append(
+                ocpp_datatypes.ChargingSchedulePeriodType(
+                    limit=charging_schedule_period_dict['limit'], 
+                    start_period=charging_schedule_period_dict['start_period'],
+                    number_phases=charging_schedule_period_dict.get('number_phases', None),
+                    phase_to_use=charging_schedule_period_dict.get('phase_to_use', None)
+                )
+            )
+        
+        charging_schedule_list_ocppType.append(
+            ocpp_datatypes.ChargingScheduleType(
+                id=charging_schedule['id'],
+                duration=charging_schedule['duration'],
+                start_schedule=charging_schedule['start_schedule'],
+                min_charging_rate=charging_schedule['min_charging_rate'],
+                charging_rate_unit=ocpp_enums.ChargingRateUnitEnumType(value=charging_schedule['charging_rate_unit']),
+                charging_schedule_period=charging_schedule_period_list_ocppType
+            )
+        )
+
+    cp = ocpp_datatypes.ChargingProfileType(
+        id=chargingprofile201_obj.chargingprofile_id,
+        stack_level=chargingprofile201_obj.stack_level,
+        charging_profile_purpose=ocpp_enums.ChargingProfilePurposeEnumType(value=chargingprofile201_obj.chargingprofile_purpose),
+        charging_profile_kind=ocpp_enums.ChargingProfileKindEnumType(value=chargingprofile201_obj.chargingprofile_kind),
+        charging_schedule=charging_schedule_list_ocppType
+    )
+    
+    if chargingprofile201_obj.transaction_id is not None:
+        cp.transaction_id = str(chargingprofile201_obj.transaction_id.uuid)
+
+    if chargingprofile201_obj.recurrency_kind is not None:
+        cp.recurrency_kind = ocpp_enums.RecurrencyKindEnumType(value=chargingprofile201_obj.recurrency_kind)
+
+    if chargingprofile201_obj.valid_from is not None:
+        cp.valid_from = convert_datetime_to_string_without_timezone_offset(chargingprofile201_obj.valid_from)
+
+    if chargingprofile201_obj.valid_to is not None:
+        cp.valid_to = convert_datetime_to_string_without_timezone_offset(chargingprofile201_obj.valid_to)
+
+    return cp
+
+###########################################################################################
 
 def authorize_idToken(id_token):
     try:
@@ -86,7 +139,6 @@ def authorize_idToken(id_token):
         if not idTag_object.revoked:
             if idTag_object.expiry_date is not None:                    
                 if idTag_object.expiry_date.timestamp() > datetime.now(timezone.utc).timestamp():
-                    # Check if user has credit
                     if user_profile.credit_balance > 0:
                         return ocpp_enums.AuthorizationStatusEnumType.accepted
                     else:
@@ -278,9 +330,9 @@ class ChargePoint201(cp):
 
             save_metervalues_to_db(meter_value, timestamp, current_transaction)
 
-            if meter_value:
-                # TODO: Parse signedMeterValue to extract the wh stop value and timestamp
-                pass
+            #if meter_value:
+            #    # TODO: Parse signedMeterValue to extract the wh stop value and timestamp
+            #    pass
 
             result, cdr = create_cdr(transaction_id)  # type: ignore
             ov2xmp_logger.info(result)
@@ -364,17 +416,20 @@ class ChargePoint201(cp):
 
     # RequestStartTransaction
     async def request_start_transaction(self, id_token, evse_id, remote_start_id, charging_profile_id):
-        
-        try:
-            charging_profile = Chargingprofile201Model.objects.get(chargingprofile_id=charging_profile_id)
-            charging_profile = None   # TODO: We need a function that receives a charging profile object and returns a ChargingProfileType.
-        except ObjectDoesNotExist:
+              
+        if charging_profile_id:
+            try:
+                charging_profile = Chargingprofile201Model.objects.get(chargingprofile_id=charging_profile_id)
+                charging_profile = chargingprofile201model_to_chargingprofile201type(charging_profile)
+            except ObjectDoesNotExist:
+                charging_profile = None
+        else:
             charging_profile = None
         
         request = call.RequestStartTransaction(
             evse_id=evse_id,
             remote_start_id=remote_start_id,
-            id_token=id_token,
+            id_token= ocpp_datatypes.IdTokenType(id_token=id_token['id_token'], type=ocpp_enums.IdTokenEnumType(value=id_token['type'])),
             charging_profile=charging_profile,
             group_id_token=None
         )
@@ -391,7 +446,10 @@ class ChargePoint201(cp):
 
 
     # SetChargingProfile
-    async def set_charging_profile(self, evse_id, charging_profile):
+    async def set_charging_profile(self, evse_id, chargingprofile_object):
+
+        charging_profile = chargingprofile201model_to_chargingprofile201type(chargingprofile_object)
+
         request = call.SetChargingProfile(
             evse_id=evse_id,
             charging_profile=charging_profile

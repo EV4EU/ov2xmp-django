@@ -1,6 +1,19 @@
 # ov2xmp-django
 
-[![ov2xmp-django](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml/badge.svg)](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml) 
+[![ov2xmp-django](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml/badge.svg)](https://github.com/EV4EU/ov2xmp-django/actions/workflows/docker-image.yml)
+
+## Funding
+
+<table>
+    <tr>
+        <td>
+            <picture>
+                <image src="./media/Flag_of_Europe.svg.png"/>
+            </picture>
+        </td>
+        <td>Funded by European Union´s Horizon Europe research and innovation programme under grant agreement no. 101056765 (EV4EU). Views and opinions expressed in this repository are however those of the authors only and do not necessarily reflect those of the European Union or the European Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European Union nor the granting authority can be held responsible for them.</td>
+    </tr>
+</table>
 
 ## Citation
 

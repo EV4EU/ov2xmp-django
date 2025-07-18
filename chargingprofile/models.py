@@ -22,7 +22,7 @@ class Chargingprofile16(models.Model):
     start_schedule = models.DateTimeField(default=None, null=True, blank=True)
     charging_rate_unit = models.CharField(choices=[(i.value, i.value) for i in enums_v16.ChargingRateUnitType], default=enums_v16.ChargingRateUnitType.watts.value, max_length=1)
     chargingschedule_period = ArrayField(models.JSONField(validators=[JSONSchemaValidator(limit_value=ChargingSchedulePeriod16.schema())]))
-    min_charging_rate = models.DecimalField(default=None, null=True, max_digits=5, decimal_places=1, blank=True)
+    min_charging_rate = models.DecimalField(default=None, null=True, max_digits=7, decimal_places=1, blank=True)
     #### end ChargingSchedule attributes
     valid_from = models.DateTimeField(default=None, null=True, blank=True)
     valid_to = models.DateTimeField(default=None, null=True, blank=True)

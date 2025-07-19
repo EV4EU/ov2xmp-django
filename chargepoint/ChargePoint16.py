@@ -2,7 +2,8 @@ from ocpp.routing import on
 from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result, call
 from ocpp.v16.enums import Action, RegistrationStatus, AuthorizationStatus, ReservationStatus
-from ocpp.v16 import datatypes as ocpp_v16_datatypes
+from ocpp.v16 import datatypes as ocpp_datatypes
+from ocpp.v16 import enums as ocpp_enums
 
 from chargepoint.models import Chargepoint as ChargepointModel
 from idtag.models import IdTag as idTagModel
@@ -58,6 +59,55 @@ def authorize_idTag(id_token):
             return {"status": AuthorizationStatus.invalid.value}
     else:
         return {"status": None}
+
+
+def chargingprofile16model_to_chargingprofile16type(chargingprofile_object: ChargingprofileModel) -> ocpp_datatypes.ChargingProfile:
+    """
+    Function that converts the ChargingProfile Django model to a ChargingProfile object of the OCPP library, so that it can be sent to a charging station.
+    """
+    chargingscheduleperiods_list_ocppType = list()
+    for chargingscheduleperiod in chargingprofile_object.chargingschedule_period:
+        chargingscheduleperiods_list_ocppType.append(
+            ocpp_datatypes.ChargingSchedulePeriod(
+                start_period=chargingscheduleperiod['startPeriod'],
+                limit=chargingscheduleperiod['limit'],
+                number_phases=chargingscheduleperiod.get('number_phases', None)
+            )
+        )
+
+    chargingschedule_ocppType = ocpp_datatypes.ChargingSchedule(
+        charging_rate_unit= ocpp_enums.ChargingRateUnitType(value=chargingprofile_object.charging_rate_unit),
+        duration = chargingprofile_object.duration,
+        charging_schedule_period=chargingscheduleperiods_list_ocppType
+    )
+
+    if chargingprofile_object.min_charging_rate:
+        chargingschedule_ocppType.min_charging_rate = float(chargingprofile_object.min_charging_rate)
+
+    if chargingprofile_object.start_schedule:
+        chargingschedule_ocppType.start_schedule = chargingprofile_object.start_schedule.isoformat()
+
+    cp = ocpp_datatypes.ChargingProfile(
+        charging_profile_id = chargingprofile_object.chargingprofile_id,
+        stack_level = chargingprofile_object.stack_level,
+        charging_profile_purpose = ocpp_enums.ChargingProfilePurposeType(value=chargingprofile_object.chargingprofile_purpose),
+        charging_profile_kind = ocpp_enums.ChargingProfileKindType(value=chargingprofile_object.chargingprofile_kind),
+        charging_schedule = chargingschedule_ocppType,
+    )
+
+    if chargingprofile_object.transaction_id:
+        cp.transaction_id = chargingprofile_object.transaction_id.transaction_id
+    
+    if chargingprofile_object.recurrency_kind:
+        cp.recurrency_kind = ocpp_enums.RecurrencyKind(value=chargingprofile_object.recurrency_kind)
+
+    if chargingprofile_object.valid_from:
+        cp.valid_from = chargingprofile_object.valid_from.isoformat()
+    
+    if chargingprofile_object.valid_to:
+        cp.valid_to = chargingprofile_object.valid_to.isoformat()
+
+    return cp
 
 
 class ChargePoint16(cp):
@@ -199,7 +249,7 @@ class ChargePoint16(cp):
         
         return call_result.StartTransaction(
             transaction_id = new_transaction.transaction_id,
-            id_tag_info = ocpp_v16_datatypes.IdTagInfo(status=result["status"])
+            id_tag_info = ocpp_datatypes.IdTagInfo(status=result["status"])
         )
 
 
@@ -303,6 +353,7 @@ class ChargePoint16(cp):
 
     # RemoteStartTransaction
     async def remote_start_transaction(self, id_tag, connector_id, charging_profile):
+        connector_id = int(connector_id)
         request = call.RemoteStartTransaction(
             connector_id=connector_id,
             id_tag=id_tag,
@@ -312,6 +363,7 @@ class ChargePoint16(cp):
 
     # RemoteStopTransaction
     async def remote_stop_transaction(self, transaction_id):
+        transaction_id = int(transaction_id)
         request = call.RemoteStopTransaction(
             transaction_id=transaction_id
         )
@@ -348,6 +400,7 @@ class ChargePoint16(cp):
 
     # CancelReservation
     async def cancel_reservation(self, reservation_id):
+        reservation_id = int(reservation_id)
         request = call.CancelReservation(
             reservation_id=reservation_id
         )
@@ -362,6 +415,7 @@ class ChargePoint16(cp):
         
     # ChangeAvailability
     async def change_availability(self, connector_id, availability_type):
+        connector_id = int(connector_id)
         request = call.ChangeAvailability(
             connector_id=connector_id,
             type=availability_type
@@ -383,6 +437,7 @@ class ChargePoint16(cp):
     
     # UnlockConnector
     async def unlock_connector(self, connector_id):
+        connector_id = int(connector_id)
         request = call.UnlockConnector(
             connector_id=connector_id
         )
@@ -404,16 +459,17 @@ class ChargePoint16(cp):
         return await self.call(request)
         
     # ClearChargingProfile
-    async def clear_charging_profile(self, charging_profile_id, connector_id, charging_profile_purpose_type, stack_level):
+    async def clear_charging_profile(self, charging_profile_id, connector_id, charging_profile_purpose, stack_level):
         request = call.ClearChargingProfile(
             id = charging_profile_id,
             connector_id = connector_id,
-            charging_profile_purpose = charging_profile_purpose_type,
+            charging_profile_purpose = charging_profile_purpose,
             stack_level = stack_level)
         return await self.call(request)
         
     #SetChargingProfile
-    async def set_charging_profile(self, connector_id, charging_profile):
+    async def set_charging_profile(self, connector_id, chargingprofile_object):
+        charging_profile = chargingprofile16model_to_chargingprofile16type(chargingprofile_object)
         request = call.SetChargingProfile(
             connector_id=connector_id,
             cs_charging_profiles = charging_profile)

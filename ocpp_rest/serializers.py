@@ -18,6 +18,7 @@ class Ocpp16ResetSerializer(OcppCommandSerializer):
 
 class Ocpp16RemoteStartTransactionSerializer(OcppCommandSerializer):
     connector_id = serializers.IntegerField(required=False, default=None)
+    charging_profile_id = serializers.IntegerField(required=False, default=None)
     id_tag = serializers.CharField(max_length=255)
 
 
@@ -64,7 +65,7 @@ class Ocpp16GetCompositeScheduleSerializer(OcppCommandSerializer):
 class Ocpp16ClearChargingProfileSerializer(OcppCommandSerializer):
     charging_profile_id = serializers.IntegerField(required=False, default=None)
     connector_id = serializers.IntegerField(required=False, default=None)
-    charging_profile_purpose_type = serializers.ChoiceField(required=False, default=None, choices=tuple(member.value for member in ocppv16_enums.ChargingProfilePurposeType))
+    charging_profile_purpose = serializers.ChoiceField(required=False, default=None, choices=tuple(member.value for member in ocppv16_enums.ChargingProfilePurposeType))
     stack_level = serializers.IntegerField(required=False, default=None)    
 
 

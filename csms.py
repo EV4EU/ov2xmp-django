@@ -6,7 +6,6 @@ from django.conf import settings
 from chargepoint.models import Chargepoint as ChargepointModel
 from chargingprofile.models import Chargingprofile16 as Chargingprofile16Model
 from chargingprofile.models import Chargingprofile201 as Chargingprofile201Model
-from chargingprofile.serializers import Chargingprofile201Serializer
 from chargepoint.models import OcppProtocols
 from ocpp.v16.enums import ChargePointStatus
 from chargepoint.ChargePoint16 import ChargePoint16
@@ -80,10 +79,9 @@ async def reset(request: Request, chargepoint_id: str):
 async def remote_start_transaction(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         connector_id = request.json['connector_id']
-        connector_id = int(connector_id)
         id_tag = request.json['id_tag']
-        charging_profile = request.json['charging_profile']
-        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].remote_start_transaction(id_tag, connector_id, charging_profile)
+        charging_profile_id = request.json['charging_profile_id']
+        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].remote_start_transaction(id_tag, connector_id, charging_profile_id)
         return json_ocpp(result)
     else:
         return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
@@ -94,7 +92,6 @@ async def remote_start_transaction(request: Request, chargepoint_id: str):
 async def remote_stop_transaction(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         transaction_id = request.json['transaction_id']
-        transaction_id = int(transaction_id)
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].remote_stop_transaction(transaction_id)
         return json_ocpp(result)
     else:
@@ -120,7 +117,6 @@ async def reserve_now(request: Request, chargepoint_id: str):
 async def cancel_reservation(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         reservation_id = request.json['reservation_id']
-        reservation_id = int(reservation_id)
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].cancel_reservation(reservation_id)
         return json_ocpp(result)
     else:
@@ -132,7 +128,6 @@ async def cancel_reservation(request: Request, chargepoint_id: str):
 async def change_availability(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         connector_id = request.json['connector_id']
-        connector_id = int(connector_id)
         availability_type = request.json['type']
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].change_availability(connector_id, availability_type)
         return json_ocpp(result)
@@ -166,7 +161,6 @@ async def clear_cache(request: Request, chargepoint_id: str):
 async def unlock_connector(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         connector_id = request.json['connector_id']
-        connector_id = int(connector_id)
         result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].unlock_connector(connector_id)
         return json_ocpp(result)
     else:
@@ -203,9 +197,9 @@ async def clear_charging_profile(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
         charging_profile_id=request.json["charging_profile_id"]
         connector_id = request.json["connector_id"]
-        charging_profile_purpose_type= request.json["charging_profile_purpose"]
+        charging_profile_purpose = request.json["charging_profile_purpose"]
         stack_level= request.json["stack_level"]
-        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].clear_charging_profile(charging_profile_id, connector_id, charging_profile_purpose_type, stack_level)
+        result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].clear_charging_profile(charging_profile_id, connector_id, charging_profile_purpose, stack_level)
         return json_ocpp(result)
     else:
         return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_STATION_DOES_NOT_EXIST)
@@ -219,40 +213,7 @@ async def set_charging_profile(request: Request, chargepoint_id: str):
         charging_profile_id = request.json["charging_profile_id"]
         try:
             chargingprofile_object = Chargingprofile16Model.objects.get(pk=charging_profile_id)
-            chargingprofile = {
-                "chargingProfileId": chargingprofile_object.chargingprofile_id,
-                "stackLevel": chargingprofile_object.stack_level,
-                "chargingProfilePurpose": chargingprofile_object.chargingprofile_purpose,
-                "chargingProfileKind": chargingprofile_object.chargingprofile_kind,
-                "chargingSchedule": {
-                    "chargingSchedulePeriod": chargingprofile_object.chargingschedule_period,
-                    "chargingRateUnit": chargingprofile_object.charging_rate_unit
-                }
-            }
-
-            if hasattr(chargingprofile_object, 'transaction_id'):
-                if chargingprofile_object.transaction_id is not None:
-                    chargingprofile["transactionId"] = chargingprofile_object.transaction_id
-            
-            if chargingprofile_object.recurrency_kind is not None:
-                chargingprofile["recurrencyKind"] = chargingprofile_object.recurrency_kind
-
-            if chargingprofile_object.valid_from is not None:
-                chargingprofile["validFrom"] = chargingprofile_object.valid_from.now().isoformat()
-
-            if chargingprofile_object.valid_to is not None:
-                chargingprofile["validTo"] = chargingprofile_object.valid_to.now().isoformat()
-            
-            if chargingprofile_object.duration is not None:
-                chargingprofile["chargingSchedule"]["duration"] = chargingprofile_object.duration
-
-            if chargingprofile_object.start_schedule is not None:
-                chargingprofile["chargingSchedule"]["startSchedule"] = chargingprofile_object.start_schedule.now().isoformat()
-            
-            if chargingprofile_object.min_charging_rate is not None:
-                chargingprofile["chargingSchedule"]["minChargingRate"] = float(chargingprofile_object.min_charging_rate)
-
-            result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].set_charging_profile(connector_id, chargingprofile)
+            result = await app.ctx.CHARGEPOINTS_V16[chargepoint_id].set_charging_profile(connector_id, chargingprofile_object)
             return json_ocpp(result)
         except Chargingprofile16Model.DoesNotExist:
             return json_ocpp(CSMS_MESSAGE_CODE.CHARGING_PROFILE_DOES_NOT_EXIST)
@@ -524,19 +485,20 @@ async def on_connect(request: Request, websocket: Websocket, charge_point_id: st
     if not (await sync_to_async(new_chargepoint.exists, thread_sensitive=True)()):
         await ChargepointModel.objects.acreate(chargepoint_id = charge_point_id, 
                                                 ocpp_version=ocpp_version,
-                                                chargepoint_status=ChargePointStatus.available.value,  # type: ignore
+                                                chargepoint_status=ChargePointStatus.available.value,
                                                 ip_address=request.client_ip,
-                                                websocket_port=request.port)
+                                                websocket_port=request.port,
+                                                connected=True)
     else:
-        await new_chargepoint.aupdate(connected=True, chargepoint_status=ChargePointStatus.available.value) # type: ignore
+        await new_chargepoint.aupdate(connected=True, chargepoint_status=ChargePointStatus.available.value)
     try:
         await cp.start()
 
     except asyncio.exceptions.CancelledError:
         logger.error("Disconnected from CP: %s", charge_point_id)        
         if isinstance(cp, ChargePoint16):
-            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value) # type: ignore
+            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
             app.ctx.CHARGEPOINTS_V16[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect
         elif isinstance(cp, ChargePoint201):
-            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value) # type: ignore
+            ChargepointModel.objects.filter(pk=charge_point_id).update(connected=False, chargepoint_status=ChargePointStatus.unavailable.value)
             app.ctx.CHARGEPOINTS_V201[charge_point_id]._connection.fail_connection()  # Ungracefully close the Websocket connection so that the CP tries to reconnect

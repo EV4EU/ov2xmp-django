@@ -4,8 +4,13 @@ from decimal import Decimal
 from pydantic.main import BaseModel
 from enum import Enum
 
+
 def get_current_utc_string_without_timezone_offset():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")[:-3] + "Z"
+
+
+def convert_datetime_to_string_without_timezone_offset(dt: datetime):
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")[:-3] + "Z"
 
 
 def convert_special_types(obj):

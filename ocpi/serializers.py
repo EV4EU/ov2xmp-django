@@ -49,7 +49,7 @@ class TariffSerializerWriteOnly(TariffSerializerReadOnly):
 class CdrSerializer(serializers.ModelSerializer):
     
     session_id = serializers.SlugRelatedField(slug_field='uuid', read_only=True)
-    tariffs = TariffSerializerReadOnly(read_only=True, many=True)
+    #tariffs = TariffSerializerReadOnly(read_only=True, many=True)
     charging_periods = ChargingPeriodSerializerField(read_only=True)
     total_cost = PriceSerializerField(required=False)
     total_fixed_cost = PriceSerializerField(required=False)

@@ -126,6 +126,16 @@ class CdrApiView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = CdrSerializer
     queryset = Cdr.objects.all()
+    
+    def get(self, request):
+        fields = request.GET.get('fields', None)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        if fields is not None:
+            fields = fields.split(',')
+            data = list(filtered_queryset.values(*fields))
+            return Response(data)
+        else:
+            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
 
 @extend_schema_view(

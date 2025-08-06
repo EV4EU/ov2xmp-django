@@ -20,7 +20,7 @@ from tasks.CSMSConsumer import CSMSConsumer
 from transaction.consumers import MetervaluesConsumer
 
 from users.consumers import UsersConsumer
-from dso_rest.dso_consumers import DSOSignalConsumer
+from dso_rest.consumers import DSOSignalConsumer
 from connector.consumers import ConnectorConsumer
 #from transformers.consumers import TransformerSignalConsumer
 
@@ -40,15 +40,7 @@ application = ProtocolTypeRouter({
                 path("ws/updates/metervalues/", MetervaluesConsumer.as_asgi()),
                 path("ws/updates/user/", UsersConsumer.as_asgi()),
                 path("ws/updates/dso_signal/", DSOSignalConsumer.as_asgi()),
-
                 path("ws/updates/connector/", ConnectorConsumer.as_asgi()),
-    
-
-                #path("ws/updates/transformer_signal/", TransformerSignalConsumer.as_asgi()), 
-
-
-                #path("ws/updates/dso_signal/", TransformerSignalConsumer.as_asgi()),
-                #re_path(r"csms/*", CSMSConsumer.as_asgi()),
             ])
         )
     ),

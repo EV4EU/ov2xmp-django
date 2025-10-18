@@ -7,35 +7,49 @@ from django.contrib.postgres.fields import ArrayField  # Import ArrayField
 
 # This Function generates default time slots with values. For Tariff
 def default_tariff_history():
+    """Generate default tariff history with 5-minute slots for 24 hours (288 slots)"""
     time_ranges = {}
     for h in range(24):
-        for m in [0, 30]:
-            start_time = f"{h:02}:{m:02}"
-            end_hour = h if m == 0 else h + 1  # If 30, move to the next hour
-            end_minute = 30 if m == 0 else 0   # If 30, reset to 0
+        for m in range(0, 60, 5):  # Every 5 minutes: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+            start_time = f"{h:02d}:{m:02d}"
+            
+            # Calculate end time
+            end_minute = m + 5
+            end_hour = h
+            
+            if end_minute >= 60:
+                end_minute = 0
+                end_hour = h + 1
             
             # Fix the "24:00" issue
             if end_hour == 24:
                 end_hour = 0  # Convert to "00"
             
-            end_time = f"{end_hour:02}:{end_minute:02}"
+            end_time = f"{end_hour:02d}:{end_minute:02d}"
             time_ranges[f"{start_time}-{end_time}"] = 0.09
     return time_ranges
 
 # This Function generates default time slots with values. For Capacity
 def default_capacity_history():
+    """Generate default capacity history with 5-minute slots for 24 hours (288 slots)"""
     time_ranges = {}
     for h in range(24):
-        for m in [0, 30]:
-            start_time = f"{h:02}:{m:02}"
-            end_hour = h if m == 0 else h + 1
-            end_minute = 30 if m == 0 else 0
+        for m in range(0, 60, 5):  # Every 5 minutes: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+            start_time = f"{h:02d}:{m:02d}"
+            
+            # Calculate end time
+            end_minute = m + 5
+            end_hour = h
+            
+            if end_minute >= 60:
+                end_minute = 0
+                end_hour = h + 1
 
             # Fix the "24:00" issue
             if end_hour == 24:
                 end_hour = 0  # Convert to "00"
             
-            end_time = f"{end_hour:02}:{end_minute:02}"
+            end_time = f"{end_hour:02d}:{end_minute:02d}"
             time_ranges[f"{start_time}-{end_time}"] = 11
     return time_ranges
 

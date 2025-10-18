@@ -154,6 +154,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 class RequestPasswordReset(CreateAPIView):
     authentication_classes = []
+    permission_classes = []
     serializer_class = ResetPasswordRequestSerializer
 
     def post(self, request):
@@ -168,7 +169,7 @@ class RequestPasswordReset(CreateAPIView):
                 reset = PasswordReset(email=email, token=token)
                 reset.save()
 
-                reset_url = "https://ov2xmp.rid-ppcinspectra.com/ui/password-reset/" + token
+                reset_url = "https://ev4eu.rid-ppcinspectra.com/password-reset/?" + token
 
                 send_mail(
                     "[O-V2X-MP] Password Reset Instructions",
@@ -187,12 +188,13 @@ class RequestPasswordReset(CreateAPIView):
 
 class ResetPassword(CreateAPIView):
     authentication_classes = []
+    permission_classes = []
     serializer_class = ResetPasswordSerializer
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.data
+        data = serializer.validated_data
         
         new_password = data['new_password']
         confirm_password = data['confirm_password']

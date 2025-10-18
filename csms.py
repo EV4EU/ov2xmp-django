@@ -195,7 +195,7 @@ async def get_composite_schedule(request: Request, chargepoint_id: str):
 @app.route("/ocpp16/clearchargingprofile/<chargepoint_id:str>", methods=["POST"])
 async def clear_charging_profile(request: Request, chargepoint_id: str):
     if chargepoint_id in app.ctx.CHARGEPOINTS_V16 and request.json is not None:
-        charging_profile_id=request.json["charging_profile_id"]
+        charging_profile_id = request.json.get("charging_profile_id", None)
         connector_id = request.json["connector_id"]
         charging_profile_purpose = request.json["charging_profile_purpose"]
         stack_level= request.json["stack_level"]

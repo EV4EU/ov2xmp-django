@@ -143,3 +143,9 @@ GitHub.sublime-settings
 .history
 
 prediction
+
+chargingprofile/archived_charging_profiles
+ocpi/tariff_archives
+dso_rest/dso_archive
+*.sql
+log_search.py

@@ -45,3 +45,54 @@ class CSMS_MESSAGE_CODE(Enum):
 class MESSAGE_CODE(Enum):
     RESPONSE_RECEIVED = 200
     TASK_SUBMITTED = "Task has been submitted successfully"
+
+
+from rest_framework_simplejwt.authentication import JWTAuthentication  
+from rest_framework.generics import ListAPIView, CreateAPIView
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.response import Response
+from typing import Callable
+from django.db.models.manager import BaseManager
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter(name='fields', type=OpenApiTypes.STR),
+            OpenApiParameter(name='paginate', type=OpenApiTypes.BOOL)
+        ]
+    )
+)
+class CustomListApiView(ListAPIView):
+    authentication_classes = [JWTAuthentication]
+    serializer_class: Callable
+    queryset: BaseManager
+    pagination_class = LimitOffsetPagination
+
+    def get(self, request):
+        fields = request.GET.get('fields', None)
+        paginate = request.GET.get('paginate', False)
+        filtered_queryset = self.filter_queryset(self.queryset)
+        if paginate:
+            paginated_queryset = self.paginate_queryset(queryset=filtered_queryset)
+            if paginated_queryset is not None:
+                if fields is not None:
+                    fields = fields.split(',')
+                    data = list(paginated_queryset.values(*fields))
+                    return Response(self.get_paginated_response(data))
+                else:
+                    data = self.get_serializer(paginated_queryset, many=True).data
+                    return self.get_paginated_response(data)
+            else:
+                return Response(data="You selected to paginate, but pagination is disabled", status=403)
+        else:
+            if fields is not None:
+                fields = fields.split(',')
+                data = list(filtered_queryset.values(*fields))
+                return Response(data)
+            else:
+                return Response(data=self.serializer_class(filtered_queryset.all(), many=True).data)
+
+class CustomListCreateApiView(CustomListApiView, CreateAPIView):
+    pass

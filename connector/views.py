@@ -1,4 +1,4 @@
-from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView
 from .models import Connector
 from .serializers import ConnectorSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication  
@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from django_filters.rest_framework import FilterSet, CharFilter
-
+from ov2xmp.helpers import CustomListApiView
 #For the Tariff and Capacity History
 from rest_framework.response import Response
 from rest_framework import status
@@ -24,28 +24,10 @@ class ConnectorFilter(FilterSet):
         fields = []
 
 
-@extend_schema_view(
-    get=extend_schema(
-        parameters=[
-            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
-        ]
-    )
-)
-class ConnectorApiView(ListAPIView):
-    authentication_classes = [JWTAuthentication]
+class ConnectorApiView(CustomListApiView):
     serializer_class = ConnectorSerializer
     queryset = Connector.objects.all()
     filterset_class = ConnectorFilter
-    
-    def get(self, request):
-        fields = request.GET.get('fields', None)
-        filtered_queryset = self.filter_queryset(self.queryset)
-        if fields is not None:
-            fields = fields.split(',')
-            data = list(filtered_queryset.values(*fields))
-            return Response(data)
-        else:
-            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
 
 @extend_schema_view(

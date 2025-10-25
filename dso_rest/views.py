@@ -37,6 +37,7 @@ class DsoSignalApiView(ListCreateAPIView):
         '''
         Send a signal to the CPO
         '''
+        #TODO: Instead of defining here the logic for calling process_dso_signal(), we should not overrid the post() and instead create a post_save() trigger in signals.py
 
         serializer = DsoSignalSerializer(data=request.data)
         if serializer.is_valid():

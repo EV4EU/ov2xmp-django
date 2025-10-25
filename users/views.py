@@ -1,11 +1,9 @@
 from django.http import HttpResponse
 from django.contrib.auth.models import User
-from rest_framework.generics import RetrieveUpdateDestroyAPIView, ListAPIView, CreateAPIView
+from rest_framework.generics import RetrieveUpdateDestroyAPIView, CreateAPIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
 from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -18,6 +16,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from ov2xmp.helpers import CustomListApiView
 
 
 def send_message_to_users(data):
@@ -72,28 +71,10 @@ class UserCreateApiView(CreateAPIView):
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema_view(
-    get=extend_schema(
-        parameters=[
-            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
-        ]
-    )
-)
-class UserApiView(ListAPIView):
-    authentication_classes = [JWTAuthentication]
+class UserApiView(CustomListApiView):
     serializer_class = UserProfileSerializer
     queryset = Profile.objects.all()
     filterset_class = ProfileFilter
-
-    def get(self, request):
-        fields = request.GET.get('fields', None)
-        filtered_queryset = self.filter_queryset(self.queryset)
-        if fields is not None:
-            fields = fields.split(',')
-            data = list(filtered_queryset.values(*fields))
-            return Response(data)
-        else:
-            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
 
 class UserDetailApiView(RetrieveUpdateDestroyAPIView):

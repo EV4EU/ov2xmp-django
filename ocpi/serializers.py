@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TariffElement, Tariff, Cdr, ChargingPeriod
+from .models import TariffElement, Tariff, Cdr
 from rest_framework.fields import ListField
 from ocpi.classes import PriceComponentSerializerField, PriceSerializerField, TariffRestrictionsSerializerField, DisplayTextSerializerField, ManyToManyFieldWriteOnlySerializerField, ChargingPeriodSerializerField
 from rest_framework.exceptions import ValidationError
@@ -48,7 +48,7 @@ class TariffSerializerWriteOnly(TariffSerializerReadOnly):
 
 class CdrSerializer(serializers.ModelSerializer):
     
-    session_id = serializers.SlugRelatedField(slug_field='uuid', read_only=True)
+    session_id = serializers.SlugRelatedField(slug_field='transaction_id', read_only=True)
     #tariffs = TariffSerializerReadOnly(read_only=True, many=True)
     charging_periods = ChargingPeriodSerializerField(read_only=True)
     total_cost = PriceSerializerField(required=False)

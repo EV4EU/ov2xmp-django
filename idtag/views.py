@@ -1,13 +1,10 @@
 from idtag.models import IdTag
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from .models import IdTag
 from .serializers import IdTagSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication  
 from django_filters.rest_framework import FilterSet, CharFilter
-from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-
+from ov2xmp.helpers import CustomListCreateApiView
 
 class IdtagFilter(FilterSet):
     username = CharFilter(field_name='user__username')
@@ -18,30 +15,10 @@ class IdtagFilter(FilterSet):
         fields = []
 
 
-@extend_schema_view(
-    get=extend_schema(
-        parameters=[
-            OpenApiParameter(name='fields', type=OpenApiTypes.STR)
-        ]
-    )
-)
-class IdtagApiView(ListCreateAPIView):
-    authentication_classes = [JWTAuthentication]
+class IdtagApiView(CustomListCreateApiView):
     serializer_class = IdTagSerializer
     queryset = IdTag.objects.all()
     filterset_class = IdtagFilter
-
-    
-    def get(self, request):
-        fields = request.GET.get('fields', None)
-        filtered_queryset = self.filter_queryset(self.queryset)
-        if fields is not None:
-            fields = fields.split(',')
-            data = list(filtered_queryset.values(*fields))
-            return Response(data)
-        else:
-            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
-    
 
 
 class IdtagDetailApiView(RetrieveUpdateDestroyAPIView):

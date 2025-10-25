@@ -4,8 +4,10 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework_simplejwt.authentication import JWTAuthentication  
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveDestroyAPIView
 from ocpi.models import TariffElement, Tariff, Cdr
+from ov2xmp.helpers import CustomListApiView, CustomListCreateApiView
+from django_filters.rest_framework import FilterSet, CharFilter, DateFilter
 
 
 @extend_schema_view(
@@ -15,20 +17,10 @@ from ocpi.models import TariffElement, Tariff, Cdr
         ]
     )
 )
-class TariffElementApiView(ListCreateAPIView):
-    authentication_classes = [JWTAuthentication]
+class TariffElementApiView(CustomListCreateApiView):
     serializer_class = TariffElementSerializer
     queryset = TariffElement.objects.all()
 
-    def get(self, request):
-        fields = request.GET.get('fields', None)
-        filtered_queryset = self.filter_queryset(self.queryset)
-        if fields is not None:
-            fields = fields.split(',')
-            data = list(filtered_queryset.values(*fields))
-            return Response(data)
-        else:
-            return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
 
 
 @extend_schema_view(
@@ -114,7 +106,16 @@ class TariffDetailApiView(RetrieveUpdateDestroyAPIView):
             return Response(data= TariffSerializerReadOnly(filtered_queryset.all(), many=True).data[0] )
 
 
+class CdrFilter(FilterSet):
+    cdr_token = CharFilter(field_name='cdr_token')
+    session_id = CharFilter(field_name='session_id__transaction_id')
+   
+    class Meta:
+        model = Cdr
+        fields = []
 
+
+'''
 @extend_schema_view(
     get=extend_schema(
         parameters=[
@@ -136,7 +137,11 @@ class CdrApiView(ListAPIView):
             return Response(data)
         else:
             return Response(data= self.serializer_class(filtered_queryset.all(), many=True).data )
-
+'''
+class CdrApiView(CustomListApiView):
+    serializer_class = CdrSerializer
+    queryset = Cdr.objects.all()
+    filterset_class = CdrFilter
 
 @extend_schema_view(
     get=extend_schema(

@@ -15,7 +15,7 @@ from statusnotification.models import Statusnotification as StatusnotificationMo
 from sampledvalue.models import Sampledvalue as SampledvalueModel
 
 from uuid import uuid4
-from ov2xmp.helpers import convert_special_types
+from ov2xmp.helpers import serialize_special_types
 from chargingprofile.models import Chargingprofile16 as ChargingprofileModel
 from chargingprofile.serializers import Chargingprofile16Serializer as ChargingprofileSerializer
 from ocpi.serializers import TariffSerializerReadOnly
@@ -224,14 +224,14 @@ class ChargePoint16(cp):
                             max_stack_level = _chargingprofile.stack_level
 
                     if selected_chargingprofile is not None:
-                        new_transaction.chargingprofile_applied = convert_special_types(ChargingprofileSerializer(selected_chargingprofile).data)
+                        new_transaction.chargingprofile_applied = serialize_special_types(ChargingprofileSerializer(selected_chargingprofile).data)
                     else:
                         new_transaction.chargingprofile_applied = None
 
                 # Retrieve all the tariffs currently associated with the connector
                 tariff_queryset = new_transaction.connector.tariff_ids.all()
                 # Dump the tariff objects and save them as attribute of the transaction
-                new_transaction.tariffs = convert_special_types(TariffSerializerReadOnly(tariff_queryset, many=True).data)
+                new_transaction.tariffs = serialize_special_types(TariffSerializerReadOnly(tariff_queryset, many=True).data)
 
             except ConnectorModel.DoesNotExist:
                 pass

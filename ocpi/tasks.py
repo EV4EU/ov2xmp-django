@@ -3,7 +3,7 @@ from transaction.models import Transaction
 from ocpi.classes import AuthMethod, Price, ChargingPeriod, CdrDimension, CdrDimensionType
 import logging
 from celery import shared_task
-from ov2xmp.helpers import convert_special_types
+from ov2xmp.helpers import serialize_special_types
 from users.models import User, Profile
 from sampledvalue.models import Sampledvalue
 import datetime
@@ -156,16 +156,16 @@ def create_cdr(transaction_id):
                 auth_method = AuthMethod.COMMAND.value,
                 cdr_location = transaction.connector.chargepoint.location,
                 tariffs = transaction.tariffs,
-                charging_periods = convert_special_types(chargingperiods),
-                total_cost = convert_special_types(total_cost),
-                total_fixed_cost = convert_special_types(total_fixed_cost),
+                charging_periods = serialize_special_types(chargingperiods),
+                total_cost = serialize_special_types(total_cost),
+                total_fixed_cost = serialize_special_types(total_fixed_cost),
                 total_energy = total_energy,
-                total_energy_cost = convert_special_types(total_energy_cost),
+                total_energy_cost = serialize_special_types(total_energy_cost),
                 total_time = total_time,
-                total_time_cost = convert_special_types(total_time_cost),
+                total_time_cost = serialize_special_types(total_time_cost),
                 total_parking_time = total_parking_time,
-                total_parking_cost = convert_special_types(total_parking_cost),
-                total_reservation_cost = convert_special_types(total_reservation_cost),
+                total_parking_cost = serialize_special_types(total_parking_cost),
+                total_reservation_cost = serialize_special_types(total_reservation_cost),
                 home_charging_compensation = False
             )
 

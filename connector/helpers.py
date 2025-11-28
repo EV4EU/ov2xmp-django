@@ -9,15 +9,15 @@ def update_history(history, time_range, new_value):
     Update history with the new value for the given time range.
     Handles time ranges that span across midnight.
     """
-    logger.info(f"[UPDATE_HISTORY] Called with time_range: {time_range}, new_value: {new_value}")
-    logger.info(f"[UPDATE_HISTORY] Input history type: {type(history)}")
+    # logger.info(f"[UPDATE_HISTORY] Called with time_range: {time_range}, new_value: {new_value}")
+    # logger.info(f"[UPDATE_HISTORY] Input history type: {type(history)}")
     
     # Ensure history is a valid dictionary
     if history is None:
         logger.warning("[UPDATE_HISTORY] History is None, initializing with defaults")
         history = default_capacity_history() if isinstance(new_value, (int, float)) and new_value > 1 else default_tariff_history()
     elif not isinstance(history, dict):
-        logger.warning(f"[UPDATE_HISTORY] History is not a dict (type: {type(history)}), initializing")
+        # logger.warning(f"[UPDATE_HISTORY] History is not a dict (type: {type(history)}), initializing")
         history = default_capacity_history() if isinstance(new_value, (int, float)) and new_value > 1 else default_tariff_history()
     
     start_time, end_time = time_range.split("-")
@@ -32,7 +32,7 @@ def update_history(history, time_range, new_value):
         history = update_history_for_range(history, time_range, new_value)
 
     updated_count = len([k for k, v in history.items() if v == new_value])
-    logger.info(f"[UPDATE_HISTORY] Final result: {updated_count} slots updated to value {new_value}")
+    # logger.info(f"[UPDATE_HISTORY] Final result: {updated_count} slots updated to value {new_value}")
     return history
 
 
@@ -41,7 +41,7 @@ def update_history_for_range(history, time_range, new_value):
     FIXED: Helper function to update history for a given time range.
     Updates all slots that OVERLAP with the given time range.
     """
-    logger.info(f"[UPDATE_RANGE] Processing range: {time_range} with value: {new_value}")
+    # logger.info(f"[UPDATE_RANGE] Processing range: {time_range} with value: {new_value}")
     
     start_time, end_time = time_range.split("-")
     start_dt = datetime.strptime(start_time, "%H:%M").time()
@@ -80,7 +80,7 @@ def update_history_for_range(history, time_range, new_value):
             old_value = history[key]
             history[key] = new_value
             updated_slots.append(key)
-            logger.info(f"[UPDATE_RANGE] ✓ Updated {key}: {old_value} -> {new_value}")
+            # logger.info(f"[UPDATE_RANGE] ✓ Updated {key}: {old_value} -> {new_value}")
     
     logger.info(f"[UPDATE_RANGE] Updated {len(updated_slots)}/{total_slots} slots: {updated_slots}")
     
@@ -152,7 +152,7 @@ def update_connectors():
             any("30-" in k or "-30" in k for k in connector.tariff_history.keys() if ":" in k)):  # Old 30-minute slots
             connector.tariff_history = default_tariff_history()
             needs_update = True
-            logger.info(f"Updated tariff history for connector {connector.uuid}")
+            # logger.info(f"Updated tariff history for connector {connector.uuid}")
 
         if (not connector.capacity_history or 
             len(connector.capacity_history) != 288 or  # Should have 288 slots now
@@ -160,13 +160,13 @@ def update_connectors():
             any("30-" in k or "-30" in k for k in connector.capacity_history.keys() if ":" in k)):  # Old 30-minute slots
             connector.capacity_history = default_capacity_history()
             needs_update = True
-            logger.info(f"Updated capacity history for connector {connector.uuid}")
+            # logger.info(f"Updated capacity history for connector {connector.uuid}")
         
         if needs_update:
             connector.save(update_fields=["tariff_history", "capacity_history"])
             updated_count += 1
 
-    logger.info(f"Updated {updated_count} connectors with corrected 5-minute interval history.")
+    # logger.info(f"Updated {updated_count} connectors with corrected 5-minute interval history.")
     return updated_count
 
 

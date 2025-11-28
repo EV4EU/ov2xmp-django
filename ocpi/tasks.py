@@ -1,6 +1,7 @@
 from ocpi.models import Cdr
 from transaction.models import Transaction
 from ocpi.classes import AuthMethod, Price, ChargingPeriod, CdrDimension, CdrDimensionType
+from ocpi.serializers import TariffSerializerReadOnly
 import logging
 from celery import shared_task
 from ov2xmp.helpers import serialize_special_types
@@ -135,7 +136,6 @@ def create_cdr(transaction_id):
                             total_energy += delta["value"]
                             cost_kwh = delta["value"] * _priceComponent["price"]
                             # Add the delta cost to the total energy cost
-                            # NOTE: The calculated cost is assumed that is always without VAT
                             total_energy_cost_exclVat += cost_kwh
                             total_energy_cost_vatOnly += cost_kwh*(_priceComponent["vat"]/100.0)
                             break # Dont look for other price_components, only ENERGY we were looking for
@@ -148,6 +148,8 @@ def create_cdr(transaction_id):
 
             total_cost = Price(excl_vat=total_energy_cost_exclVat+total_fixed_cost_exclVat, incl_vat=total_energy_cost_exclVat+total_energy_cost_vatOnly+total_fixed_cost_exclVat+total_fixed_cost_vatOnly)
 
+            serialized_tariffs = [serialize_special_types(TariffSerializerReadOnly(tariff).data) for tariff in applicable_tariffs_for_transaction]
+
             cdr = Cdr(
                 start_date_time = transaction.start_transaction_timestamp,
                 end_date_time = transaction.stop_transaction_timestamp,
@@ -155,7 +157,7 @@ def create_cdr(transaction_id):
                 cdr_token = transaction.id_tag,
                 auth_method = AuthMethod.COMMAND.value,
                 cdr_location = transaction.connector.chargepoint.location,
-                tariffs = transaction.tariffs,
+                tariffs = serialized_tariffs,
                 charging_periods = serialize_special_types(chargingperiods),
                 total_cost = serialize_special_types(total_cost),
                 total_fixed_cost = serialize_special_types(total_fixed_cost),

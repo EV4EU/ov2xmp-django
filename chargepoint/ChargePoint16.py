@@ -13,21 +13,18 @@ from connector.models import Connector as ConnectorModel
 from reservation.models import Reservation as ReservationModel
 from statusnotification.models import Statusnotification as StatusnotificationModel
 from sampledvalue.models import Sampledvalue as SampledvalueModel
+from chargingprofile.models import Chargingprofile16 as ChargingprofileModel
+from chargingprofile.serializers import Chargingprofile16Serializer
+from ocpi.tasks import create_cdr, apply_cdr
+from ov2xmp.helpers import serialize_special_types
 
 from uuid import uuid4
-from ov2xmp.helpers import serialize_special_types
-from chargingprofile.models import Chargingprofile16 as ChargingprofileModel
-from chargingprofile.serializers import Chargingprofile16Serializer as ChargingprofileSerializer
-from ocpi.serializers import TariffSerializerReadOnly
 from datetime import datetime, timezone
 import json
 from channels.layers import get_channel_layer
 from django.db import DatabaseError
 import logging
 from django.db.models import Max
-from ocpi.tasks import create_cdr, apply_cdr
-
-import pytz
 
 channel_layer = get_channel_layer()
 
@@ -191,50 +188,35 @@ class ChargePoint16(cp):
     @on(Action.start_transaction)
     def on_startTransaction(self, connector_id, id_tag, meter_start, timestamp, **kwargs):
 
-        current_cp = ChargepointModel.objects.filter(pk=self.id).get()
+        # Parse timestamp if it's a string
+        if isinstance(timestamp, str):
+            start_timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        else:
+            start_timestamp = timestamp
 
         new_transaction = TransactionModel.objects.create(
-            start_transaction_timestamp = timestamp,
+            start_transaction_timestamp = start_timestamp,
             wh_meter_start = meter_start,
             wh_meter_last = meter_start,
-            wh_meter_last_timestamp = timestamp
+            wh_meter_last_timestamp = start_timestamp
         )
+
+        # Obtain the relevant Connector object
+        try:
+            connector = ConnectorModel.objects.get(
+                chargepoint__chargepoint_id=self.id, 
+                connectorid=connector_id
+            )   
+        except ConnectorModel.DoesNotExist:
+            connector = None
+        new_transaction.connector = connector
+
         new_transaction.save()
 
         result = authorize_idTag(id_tag)
         
         if result["status"] == AuthorizationStatus.accepted:
             new_transaction.id_tag = idTagModel.objects.get(idToken=id_tag)
-            try:
-                new_transaction.connector = ConnectorModel.objects.filter(connectorid=connector_id, chargepoint=current_cp).get()
-                # Retrieve the charging profile currently associated with the connector
-                chargingprofiles = new_transaction.connector.charging_profile
-                if chargingprofiles is not None:
-                    max_stack_level = 0
-                    selected_chargingprofile = None
-                    for _chargingprofile in chargingprofiles:
-                        _chargingprofile = ChargingprofileModel.objects.get(chargingprofile_id=_chargingprofile)
-                        current_date = datetime.now()
-                        if _chargingprofile.valid_from is not None and _chargingprofile.valid_to is not None:
-                            if not (_chargingprofile.valid_from.replace(tzinfo=pytz.UTC) < current_date.replace(tzinfo=pytz.UTC) and _chargingprofile.valid_to.replace(tzinfo=pytz.UTC) > current_date.replace(tzinfo=pytz.UTC)):
-                                continue  # If valid_from and valid_to are set, but the chargingprofile is outside of the current date, then skip it
-                        
-                        if _chargingprofile.stack_level > max_stack_level:
-                            selected_chargingprofile = _chargingprofile
-                            max_stack_level = _chargingprofile.stack_level
-
-                    if selected_chargingprofile is not None:
-                        new_transaction.chargingprofile_applied = serialize_special_types(ChargingprofileSerializer(selected_chargingprofile).data)
-                    else:
-                        new_transaction.chargingprofile_applied = None
-
-                # Retrieve all the tariffs currently associated with the connector
-                tariff_queryset = new_transaction.connector.tariff_ids.all()
-                # Dump the tariff objects and save them as attribute of the transaction
-                new_transaction.tariffs = serialize_special_types(TariffSerializerReadOnly(tariff_queryset, many=True).data)
-
-            except ConnectorModel.DoesNotExist:
-                pass
             reservation_id = kwargs.get('reservation_id', None)
             if reservation_id is not None:
                 ReservationModel.objects.filter(connector__chargepoint__chargepoint_id = self.id, reservation_id=reservation_id).delete()
@@ -305,20 +287,81 @@ class ChargePoint16(cp):
 
 
     @on(Action.stop_transaction)
-    def on_stopTransaction(self, meter_stop, timestamp, transaction_id, **kwargs): #reason, id_tag, transaction_data):
+    def on_stopTransaction(self, meter_stop, timestamp, transaction_id, **kwargs):
         
         try:
             current_transaction = TransactionModel.objects.get(transaction_id=transaction_id)
-
-            current_transaction.stop_transaction_timestamp = timestamp
+            
+            # Parse timestamp if it's a string
+            if isinstance(timestamp, str):
+                stop_timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            else:
+                stop_timestamp = timestamp
+            
+            # Update transaction with stop details
+            current_transaction.stop_transaction_timestamp = stop_timestamp
             current_transaction.wh_meter_stop = meter_stop
             current_transaction.transaction_status = TransactionStatus.finished
             reason = kwargs.get('reason', None)
             if reason is not None:
                 current_transaction.reason_stopped = reason
 
+            # Get charging profiles from connector's charging_profile array
+            if current_transaction.connector is not None:
+                connector = current_transaction.connector
+                
+                # Get the charging profile IDs that are currently in the connector
+                connector_charging_profile_ids = connector.charging_profile if connector.charging_profile else []
+                ov2xmp_logger.info(f"Connector has {len(connector_charging_profile_ids)} charging profiles: {connector_charging_profile_ids}")
+                
+                if connector_charging_profile_ids and current_transaction.stop_transaction_timestamp is not None:
+                    
+                    # Get transaction time window
+                    t_s = current_transaction.start_transaction_timestamp.replace(tzinfo=timezone.utc)
+                    t_e = current_transaction.stop_transaction_timestamp.replace(tzinfo=timezone.utc)
+                    
+                    seen_profile_ids = set()  # Track unique profiles
+                    
+                    # Fetch ONLY the charging profiles that are in connector.charging_profile
+                    for profile_id in connector_charging_profile_ids:
+                        # Skip if we've already added this profile
+                        if profile_id in seen_profile_ids:
+                            continue
+                        try:
+                            _chargingprofile = ChargingprofileModel.objects.get(chargingprofile_id=profile_id)
+                            
+                            # Check if charging profile was active during transaction time
+                            if _chargingprofile.valid_from is not None and _chargingprofile.valid_to is not None:
+                                c_s = _chargingprofile.valid_from.replace(tzinfo=timezone.utc)
+                                c_e = _chargingprofile.valid_to.replace(tzinfo=timezone.utc)
+                                
+                                # Check if charging profile time overlaps with transaction time
+                                if (c_e >= t_s and c_s <= t_s) or (c_s >= t_s and c_e <= t_e) or (c_s <= t_s and c_e >= t_e) or (c_s <= t_e and c_e >= t_e):
+                                    # Add to transaction's chargingprofile_applied
+                                    current_transaction.chargingprofile_applied.append(
+                                        serialize_special_types(Chargingprofile16Serializer(_chargingprofile).data)
+                                    )
+                                    seen_profile_ids.add(profile_id)
+                                    ov2xmp_logger.info(f"Added profile {profile_id} to chargingprofile_applied (was active during transaction)")
+                                else:
+                                    ov2xmp_logger.info(f"Skipped profile {profile_id} - not active during transaction time window")
+                            else:
+                                # Profile has no validity times - add it anyway since it's in connector.charging_profile
+                                current_transaction.chargingprofile_applied.append(
+                                    serialize_special_types(Chargingprofile16Serializer(_chargingprofile).data)
+                                )
+                                seen_profile_ids.add(profile_id)
+                                ov2xmp_logger.info(f"Added profile {profile_id} to chargingprofile_applied (no validity times)")
+                                
+                        except ChargingprofileModel.DoesNotExist:
+                            ov2xmp_logger.warning(f"Charging profile {profile_id} not found in database")
+                            continue
+                    
+                    ov2xmp_logger.info(f"Total profiles added to transaction: {len(seen_profile_ids)}")
+            
             current_transaction.save()
 
+            # Create and apply CDR
             result, cdr = create_cdr(transaction_id)  # type: ignore
             ov2xmp_logger.info(result)
 
@@ -327,6 +370,9 @@ class ChargePoint16(cp):
 
             return call_result.StopTransaction()
         
+        except TransactionModel.DoesNotExist:
+            ov2xmp_logger.error(f"Transaction {transaction_id} not found")
+            return call_result.StopTransaction()
         except DatabaseError as e:
             ov2xmp_logger.error("Connection error with Django DB. The transaction details for # " + str(transaction_id) + " have not been saved.")
             ov2xmp_logger.error(e)

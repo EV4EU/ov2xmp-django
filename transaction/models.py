@@ -24,5 +24,4 @@ class Transaction(models.Model):
     id_tag = models.ForeignKey(IdTag, on_delete=models.SET_NULL, null=True, default=None)
     reason_stopped = models.CharField(max_length=50, null=True)
     transaction_status = models.CharField(max_length=15, choices=TransactionStatus.choices, default=TransactionStatus.started)
-    chargingprofile_applied = models.JSONField(null=True, default=None, blank=True)
-    tariffs = ArrayField(base_field=models.JSONField(), null=True, default=None, blank=True)
+    chargingprofile_applied = ArrayField(base_field=models.JSONField(), default=list())
